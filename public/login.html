@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso · Measurement Venezuela</title>
+  <link rel="stylesheet" href="/login.css">
+  <script defer src="/vendor/lucide.js"></script>
+  <script defer src="/login.js"></script>
+</head>
+<body>
+  <main>
+    <img src="/assets/yango.svg" alt="Yango Group" width="116" height="48">
+    <h1>Daily Tracker</h1>
+    <p class="country">Venezuela · Caracas</p>
+    <form id="loginForm">
+      <label for="username">Usuario</label>
+      <input id="username" name="username" autocomplete="username" required maxlength="80" autofocus>
+      <label for="password">Clave</label>
+      <div class="password-field">
+        <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="256">
+        <button type="button" id="revealPassword" aria-label="Mostrar clave" title="Mostrar clave"><i data-lucide="eye"></i></button>
+      </div>
+      <p id="loginError" role="alert" hidden></p>
+      <button type="submit" id="loginSubmit">Entrar</button>
+    </form>
+  </main>
+</body>
+</html>

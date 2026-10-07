@@ -1,0 +1,21 @@
+{
+  "name": "measurement-venezuela",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "dev": "node --env-file-if-exists=.env server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "setup:access": "node scripts/setup-access.mjs",
+    "build": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "chart.js": "4.4.6",
+    "express": "5.2.1",
+    "express-rate-limit": "8.7.1",
+    "google-auth-library": "11.1.0",
+    "lucide": "1.8.0"
+  }
+}

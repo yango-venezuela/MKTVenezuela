@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Tracker · Venezuela</title>
+
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="/assets/yango.svg" alt="Yango Group">
+        <div>
+          <h1>Daily Tracker · Venezuela</h1>
+          <p class="subtitle">Caracas · actual vs. plan to date</p>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="control"><span>View</span>
+          <div class="toggle" id="periodToggle">
+            <button data-period="month" class="active">Month</button>
+            <button data-period="week">Week</button>
+          </div>
+        </div>
+        <label class="control">Window
+          <select id="windowSelect" aria-label="Window"></select>
+        </label>
+        <button class="icon-btn" id="refreshData" type="button" title="Actualizar datos" aria-label="Actualizar datos"><i data-lucide="refresh-cw"></i></button>
+        <button class="icon-btn" id="logout" type="button" title="Cerrar sesion" aria-label="Cerrar sesion"><i data-lucide="log-out"></i></button>
+      </div>
+    </div>
+  </header>
+  <div class="data-meta" id="dataMeta" aria-live="polite"></div>
+  <div id="connectionError" class="connection-error" role="alert" hidden></div>
+
+  <main class="main">
+    <section class="stack">
+      <div>
+        <div class="section-title"><h2>Primary results</h2></div>
+        <div class="hero-grid" id="primaryKpis"></div>
+      </div>
+
+      <div>
+        <div class="section-title"><h2>Levers behind the result</h2></div>
+        <div class="lever-layout"><div class="lever-grid" id="leverKpis"></div><div class="weekly-group"><div class="weekly-caption" id="weeklyCaption">Weekly</div><div class="weekly-grid" id="weeklyKpis"></div></div></div>
+      </div>
+
+      <section class="panel">
+        <div class="chart-controls">
+          <h3 style="margin:0;">Actual vs. Plan</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div class="seg" id="metricSeg">
+              <button data-m="trips" class="active">Trips</button>
+              <button data-m="gmv">GMV</button>
+              <button data-m="new">New users</button><button data-m="installs">Installs</button>
+            </div>
+            <div class="seg" id="modeSeg">
+              <button data-mode="daily" class="active">Daily</button>
+              <button data-mode="cum">Cumulative</button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-legend" aria-label="Chart legend"><span><i class="legend-line plan"></i>Plan</span><span><i class="legend-line"></i>Actual</span></div>
+        <div class="big-chart-wrap"><canvas id="mainChart"></canvas></div>
+        <p class="footnote" id="chartNote"></p>
+      </section>
+
+      <section class="panel">
+        <h3>Focus map by KPI</h3>
+        <div id="focusMapWrap"></div>
+        <p class="footnote">Green: on plan. Yellow: up to 5% below plan. Red: more than 5% below plan. Gray: actual or plan is unavailable. </p>
+      </section>
+
+      
+    </section>
+
+    <aside>
+      <section class="panel" id="detail"></section>
+      <section class="panel focus-card" style="border-left:4px solid var(--yango-red);background:#fff3f3;">
+        <strong>This week's focus</strong>
+        <p id="weekFocus" style="margin:6px 0 0;"></p>
+      </section>
+
+    </aside>
+  </main>
+</div>
+
+<dialog class="drawer" id="investigation" aria-labelledby="investigationTitle"></dialog>
+
+
+<script defer src="/vendor/chart.js"></script>
+<script defer src="/vendor/lucide.js"></script>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

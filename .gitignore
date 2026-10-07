@@ -1,0 +1,13 @@
+node_modules/
+public/assets/*.ttf
+.env
+.env.*
+!.env.example
+data/*.json
+data/*.xlsx
+credentials*
+access*.txt
+*.log
+.DS_Store
+.vercel/
+coverage/
