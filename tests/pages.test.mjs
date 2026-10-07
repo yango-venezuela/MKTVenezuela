@@ -60,7 +60,7 @@ test('static export works under a project subpath and excludes backend credentia
   try {
     await buildPages({ snapshot, gate: { ...gate, password, SESSION_SECRET: 'must-not-publish' }, output, allowPublicData: true });
     const html = await fs.readFile(path.join(output, 'index.html'), 'utf8');
-    assert.match(html, /src="\.\/app\.js\?access=3"/);
+    assert.match(html, /src="\.\/app\.js\?access=4"/);
     const loginHtml = await fs.readFile(path.join(output, 'login.html'), 'utf8');
     assert.match(loginHtml, /src="\.\/login\.js\?access=2"/);
     assert.match(await fs.readFile(path.join(output, 'login.js'), 'utf8'), /runtime\.js\?access=2/);

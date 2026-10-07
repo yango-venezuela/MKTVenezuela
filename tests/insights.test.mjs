@@ -42,6 +42,13 @@ test('week focus follows a selected past week, not always the current week', () 
   assert.equal(insight.status, 'ok');
   assert.match(insight.headline, /Trips \+20\.0% and GMV \+30\.0%/);
 });
+test('week overview dates do not inherit the fixed last-closed equity card dates', () => {
+  const data = sample();
+  data.weeklyActuals = [{ weekStart: '2026-09-28', weekEnd: '2026-10-04', activeUnique: 100, trips: 700, status: 'closed' }];
+  const insight = periodInsight(data, { ...month, period: 'week', week: '2026-10-05' });
+  assert.equal(insight.windowLabel, 'Oct 5–Oct 11');
+  assert.match(insight.headline, /Trips -1\.0% and GMV -7\.0%/);
+});
 test('missing comparisons and upcoming weeks never produce a positive overview', () => {
   const data = sample(); data.days.forEach(day => { day.gmvBdg = null; });
   assert.equal(periodInsight(data, month).status, 'unknown');

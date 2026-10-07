@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseWeeklyPlans, parseClosedWeekly, trackerRanges } from '../lib/sheets.mjs';
-import { weeklyMetrics, weeklyTarget, kpisFor } from '../public/model.js';
+import { weeklyMetrics, weeklyTarget, kpisFor, focusCell } from '../public/model.js';
 import { publicSnapshot } from '../scripts/build-pages.mjs';
 
 const active = [['ActiveRiders/Weekly', null, null, null, null, null, 'Date'], ...Array.from({ length: 7 }, (_, i) => [100, 2.4, null, null, null, null, 46300 + i])];
@@ -64,7 +64,7 @@ test('closed frequency divides weekly trips by same-window unique users and avoi
   data.weeklyActuals[0].activeUnique = 0;
   assert.equal(weeklyMetrics(data, '2026-10-05').frequency.actual, null);
 });
-test('Month shows the latest available closed week while Week respects its explicit selection', () => {
+test('top equity cards keep the last closed week in both Month and Week while business dates follow selection', () => {
   const data = sample();
   data.weeklyPlans['2026-09-28'] = { active: 100, frequency: 2.1 };
   data.weeklyActuals.push({ weekStart: '2026-09-28', weekEnd: '2026-10-04', activeUnique: 110, trips: 250, status: 'closed' });
@@ -74,7 +74,18 @@ test('Month shows the latest available closed week while Week respects its expli
   assert.equal(monthly.kpis.find(kpi => kpi.id === 'active').expected, 100);
   assert.equal(monthly.kpis.find(kpi => kpi.id === 'frequency').actual, 250 / 110);
   assert.equal(monthly.kpis.find(kpi => kpi.id === 'frequency').expected, 2.1);
-  assert.equal(kpisFor(data, { period: 'week', month: '2026-10', week: '2026-10-05' }).weekly.active.actual, null);
+  const weekly = kpisFor(data, { period: 'week', month: '2026-10', week: '2026-10-05' });
+  assert.equal(weekly.weekly.key, '2026-10-05');
+  assert.equal(weekly.weekly.active.actual, null);
+  assert.equal(weekly.equity.key, '2026-09-28');
+  assert.equal(weekly.kpis.find(kpi => kpi.id === 'active').actual, 110);
+  assert.equal(weekly.kpis.find(kpi => kpi.id === 'active').expected, 100);
+  assert.equal(weekly.kpis.find(kpi => kpi.id === 'frequency').actual, 250 / 110);
+  assert.equal(weekly.kpis.find(kpi => kpi.id === 'frequency').expected, 2.1);
+  const mapActive = focusCell(data, { key: '2026-10-05', end: '2026-10-11' }, 'active');
+  assert.equal(mapActive.expected, 100);
+  assert.equal(mapActive.actual, null);
+  assert.equal(focusCell(data, { key: '2026-10-05', end: '2026-10-11' }, 'frequency').expected, 2.4);
 });
 test('a month without a matching closed week does not inherit a different months real values', () => {
   const data = sample();

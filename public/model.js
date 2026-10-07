@@ -93,8 +93,9 @@ export function kpisFor(data, state) {
     const values = weeklyMetrics(data, week.key);
     return values.closed && numeric(values.active.actual) && numeric(values.frequency.actual);
   }).at(-1);
-  const weeklyKey = state.period === 'week' ? state.week : latestClosed?.key || monthWeeks.find(week => week.key === current)?.key || monthWeeks.filter(week => week.key <= data.meta.cutoff).at(-1)?.key || monthWeeks[0].key;
-  const weekly = weeklyMetrics(data, weeklyKey);
+  const equityKey = latestClosed?.key || monthWeeks.find(week => week.key === current)?.key || monthWeeks.filter(week => week.key <= data.meta.cutoff).at(-1)?.key || monthWeeks[0].key;
+  const equity = weeklyMetrics(data, equityKey);
+  const weekly = state.period === 'week' ? weeklyMetrics(data, state.week) : equity;
   const primaryAndLevers = Object.keys(fields).map(id => {
     const agg = aggs[id];
     const target = numeric(targets[id]) ? targets[id] : agg.fullPlan;
@@ -109,9 +110,9 @@ export function kpisFor(data, state) {
     expected: sameObservedDates && aggs.trips.expected > 0 && numeric(aggs.gmv.expected) ? aggs.gmv.expected / aggs.trips.expected : null,
     forecast: null, forecastTarget: null,
   });
-  primaryAndLevers.push({ id: 'active', title: names.active, group: 'weekly', unit: 'number', ...weekly.active, forecast: null, rangeLabel: weekly.label });
-  primaryAndLevers.push({ id: 'frequency', title: names.frequency, group: 'weekly', unit: 'ratio', ...weekly.frequency, forecast: null, rangeLabel: weekly.label });
-  return { kpis: primaryAndLevers, dates, weekly, coverage: aggs.trips.coverage };
+  primaryAndLevers.push({ id: 'active', title: names.active, group: 'weekly', unit: 'number', ...equity.active, forecast: null, rangeLabel: equity.label });
+  primaryAndLevers.push({ id: 'frequency', title: names.frequency, group: 'weekly', unit: 'ratio', ...equity.frequency, forecast: null, rangeLabel: equity.label });
+  return { kpis: primaryAndLevers, dates, weekly, equity, coverage: aggs.trips.coverage };
 }
 
 export function chartSeries(data, state, metric, mode) {
