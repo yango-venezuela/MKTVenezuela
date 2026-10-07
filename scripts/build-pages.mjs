@@ -30,7 +30,9 @@ export function publicSnapshot(snapshot) {
   }));
   const performanceTargets = Object.fromEntries(Object.entries(snapshot.performanceTargets || {}).filter(([month]) => /^\d{4}-\d{2}$/.test(month))
     .map(([month, targets]) => [month, Object.fromEntries(['spend', 'cpi', 'paidShare', 'paidCac'].map(key => [key, number(targets[key])]))]));
-  return { days, active, monthlyTargets, performanceTargets, meta: {
+  const weeklyPlans = Object.fromEntries(Object.entries(snapshot.weeklyPlans || {}).filter(([week]) => date(week)).map(([week, target]) => [week, { active: number(target.active), frequency: number(target.frequency) }]));
+  const weeklyActuals = (snapshot.weeklyActuals || []).map(row => ({ weekStart: date(row.weekStart), weekEnd: date(row.weekEnd), activeUnique: number(row.activeUnique), trips: number(row.trips), status: row.status === 'closed' ? 'closed' : null })).filter(row => row.weekStart && row.weekEnd && row.status === 'closed');
+  return { days, active, monthlyTargets, performanceTargets, weeklyPlans, weeklyActuals, meta: {
     cutoff: date(snapshot.meta?.cutoff), month: days.at(-1).date.slice(0, 7),
     performanceCutoff: date(snapshot.meta?.performanceCutoff),
     retrievedAt: snapshot.meta?.retrievedAt, publishedAt: new Date().toISOString(), warnings, source: 'github-pages', live: false,

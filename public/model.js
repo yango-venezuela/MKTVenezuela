@@ -38,12 +38,8 @@ export function weeksForMonth(month) {
 
 const sum = (records, field) => records.reduce((total, day) => total + day[field], 0);
 export function weeklyTarget(data, key) {
-  const explicit = data.active?.find(row => row.weekStart === key && numeric(row.weeklyTarget));
-  if (explicit) return explicit.weeklyTarget;
-  const rows = rangeDates(key, shiftDate(key, 6)).map(date => data.days.find(day => day.date === date));
-  if (rows.every(day => day && numeric(day.activePlanAllocation))) return sum(rows, 'activePlanAllocation');
-  const saved = data.weeklyTargets?.[key];
-  return numeric(saved) ? saved : null;
+  const target = data.weeklyPlans?.[key]?.active;
+  return numeric(target) && target >= 0 ? target : null;
 }
 
 export function status(actual, expected) {
@@ -71,23 +67,19 @@ export function aggregate(data, dates, metric) {
 
 export function weeklyMetrics(data, key) {
   const end = shiftDate(key, 6);
-  const cutoff = data.meta.cutoff && data.meta.cutoff < end ? data.meta.cutoff : end;
+  const closed = !!data.meta.cutoff && end <= data.meta.cutoff;
+  const upcoming = !data.meta.cutoff || key > data.meta.cutoff;
   const target = weeklyTarget(data, key);
-  const curve = activeProfile(data);
-  const elapsed = cutoff && cutoff >= key ? dayIndex(cutoff) : null;
-  const actualRow = elapsed !== null ? data.active?.find(row => row.date === cutoff && row.weekStart === key) : null;
-  const users = numeric(actualRow?.cumulativeUnique) ? actualRow.cumulativeUnique : null;
-  const expectedUsers = numeric(target) && elapsed !== null && curve ? target * curve.cumulative[elapsed] : null;
-  const dates = cutoff && cutoff >= key ? rangeDates(key, cutoff) : [];
-  const trips = dates.length ? aggregate(data, dates, 'trips') : null;
-  const allObserved = trips && trips.observedDates.length === dates.length;
-  const completePlans = trips && trips.coverage === dates.length && numeric(trips.expected);
+  const record = closed ? data.weeklyActuals?.find(row => row.weekStart === key && row.weekEnd === end && row.status === 'closed') : null;
+  const users = numeric(record?.activeUnique) && record.activeUnique >= 0 ? record.activeUnique : null;
+  const frequencyTarget = data.weeklyPlans?.[key]?.frequency;
   return {
-    key, end, cutoff, label: `${formatDate(key)}–${formatDate(end)}`,
-    active: { actual: users, expected: expectedUsers, fullTarget: target },
+    key, end, closed, upcoming, label: `${formatDate(key)}–${formatDate(end)}`,
+    active: { actual: users, expected: target, fullTarget: target, closed, upcoming },
     frequency: {
-      actual: allObserved && users > 0 ? trips.actual / users : null,
-      expected: completePlans && expectedUsers > 0 ? trips.expected / expectedUsers : null,
+      actual: users > 0 && numeric(record?.trips) && record.trips >= 0 ? record.trips / users : null,
+      expected: numeric(frequencyTarget) && frequencyTarget >= 0 ? frequencyTarget : null,
+      closed, upcoming,
     },
   };
 }
@@ -96,8 +88,8 @@ export function kpisFor(data, state) {
   const dates = state.period === 'week' ? rangeDates(state.week, shiftDate(state.week, 6)) : monthDates(state.month);
   const aggs = Object.fromEntries(Object.keys(fields).map(metric => [metric, aggregate(data, dates, metric)]));
   const targets = data.monthlyTargets?.[state.month] || {};
-  const closed = [...new Set((data.active || []).filter(row => row.date === row.weekEnd && row.weekEnd <= data.meta.cutoff).map(row => row.weekStart))].sort();
-  const weeklyKey = state.period === 'week' ? state.week : closed.at(-1) || weekStart(data.meta.cutoff || `${state.month}-01`);
+  const monthWeeks = weeksForMonth(state.month), current = weekStart(data.meta.cutoff || `${state.month}-01`);
+  const weeklyKey = state.period === 'week' ? state.week : monthWeeks.find(week => week.key === current)?.key || monthWeeks.filter(week => week.key <= data.meta.cutoff).at(-1)?.key || monthWeeks[0].key;
   const weekly = weeklyMetrics(data, weeklyKey);
   const primaryAndLevers = Object.keys(fields).map(id => {
     const agg = aggs[id];

@@ -88,11 +88,27 @@ Variables de entorno de produccion:
   permiso de lectura sobre el archivo y Google Sheets API habilitada.
 - `ACTIVE_USERS_TAB`: tabla opcional de conteos deduplicados por dia y semana.
 
-La tabla opcional de activos usa nueve columnas: fecha, inicio de semana,
-fin de semana, dia, activos diarios, unicos acumulados semanales, unicos de
-semana completa, target semanal y estado (`completo`). Nunca se suman DAU
-para reconstruir usuarios unicos. Si faltan los unicos o trips del mismo
-rango, la frecuencia se muestra sin dato.
+Active Users y Trips per Active User se evaluan exclusivamente por semana
+completa, de lunes a domingo. Los planes de activos y frecuencia se toman una vez
+de las columnas E y F de `4. Daily Tracker`, alineados con el encabezado Date
+(actualmente L, tras insertar la nueva columna F). Los siete
+valores repetidos no se suman. Si cambian dentro de una semana, la lectura falla
+para evitar escoger arbitrariamente un plan.
+
+La frecuencia plan procede de F, igual que el plan de activos procede de E.
+Los planes nunca se derivan del reparto diario de viajes ni
+se prorratea el plan de activos. En Month, Equity muestra la semana actual;
+en Week sigue la seleccion. Una semana en curso muestra el plan completo y
+`Pending close`, sin evaluar un semaforo contra una fraccion de semana.
+
+Los reales cerrados proceden de los registros Caracas / Total de `6. DB Weekly`:
+usuarios unicos de la columna N y viajes de AJ. La frecuencia real es viajes
+de esa misma semana / usuarios unicos. No se suman DAU ni se promedian ratios.
+La semana que cruza septiembre y octubre conserva sus siete dias para Equity,
+aunque los indicadores mensuales de negocio solo incluyan octubre.
+La lectura semanal oficial sustituye en Equity los conteos del export historico
+de OSY; no se mezclan sus dos definiciones de usuarios. Los exports historicos
+opcionales se conservan como datos de referencia, no como valores del dashboard.
 
 Los planes diarios se conservan tal como llegan del tracker. Las proyecciones
 mensuales utilizan su presupuesto mensual aprobado. Una diferencia entre la
@@ -104,7 +120,8 @@ una poblacion diferente y no se intercambia automaticamente.
 
 Cuatro tarjetas (Spend, CPI, Paid Share y Paid CAC) siguen la vista mensual o
 semanal. El grafico diario alterna Spend y Paid CAC y mantiene las separaciones
-de semanas. Los datos vienen de `4. Daily Tracker!K1:AD37`.
+de semanas. La lectura localiza Date y Budget por encabezado; actualmente usa
+`4. Daily Tracker!L1:AE37` y `AK3:AR8`, sin depender de la antigua posicion K.
 
 Spend suma los costos reales y compara con el plan diario al mismo corte. El
 pace es real/plan a fecha, no porcentaje de presupuesto consumido. La proyeccion
@@ -119,7 +136,7 @@ ratios diarios. Esto corrige la mezcla de poblaciones del resumen mensual
 actual del tracker, que pondera Paid Share con `Act wo BipBip` pero calcula CAC
 con `Act in Yango`, y puede producir pequenas diferencias respecto a ese resumen.
 
-El CPI plan procede de la celda Z2 del tracker; Paid Share y Paid CAC quedan sin
+El CPI plan procede de la celda AA2 del tracker; Paid Share y Paid CAC quedan sin
 target hasta confirmacion. Se configuran por mes en `performanceTargets`.
 Un `paidCacBdg` diario tiene prioridad sobre el target mensual en el grafico.
 Los costos menores al target son favorables; Paid Share conserva una comparacion

@@ -1,4 +1,4 @@
-import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate, activeProfile } from './model.js';
+import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeklyMetrics, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate } from './model.js';
 import { loadDashboard, signOut } from './runtime.js';
 import { weeklySeparators } from './chart-weeks.js';
 import { performanceFor, performanceSeries } from './performance.js';
@@ -14,6 +14,7 @@ const fmt = (value, unit = 'number') => !numeric(value) ? 'No data' : unit === '
 const unit = id => ['gmv', 'ticket'].includes(id) ? 'usd' : id === 'frequency' ? 'ratio' : 'number';
 const percent = value => numeric(value) ? `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%` : 'No comparison';
 const delta = (actual, expected) => numeric(actual) && numeric(expected) && expected === 0 ? 'Zero plan' : `${percent(change(actual, expected))}${numeric(change(actual, expected)) ? ' vs. plan' : ''}`;
+const kpiStatus = kpi => kpi.group === 'weekly' && !kpi.closed ? { key: 'unknown', label: kpi.upcoming ? 'Upcoming week' : 'Week in progress' } : status(kpi.actual, kpi.expected);
 
 function renderMeta() {
   const notes = [];
@@ -57,13 +58,13 @@ function renderKpis() {
   for (const id of ['primaryKpis', 'leverKpis', 'weeklyKpis']) get(id).innerHTML = '';
   get('weeklyCaption').textContent = `Weekly · ${result.weekly.label}`;
   for (const kpi of result.kpis) {
-    const st = status(kpi.actual, kpi.expected);
+    const st = kpiStatus(kpi);
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `kpi ${kpi.group === 'primary' ? 'primary' : ''} ${state.selected === kpi.id ? 'active' : ''}`;
     button.setAttribute('aria-pressed', String(state.selected === kpi.id));
     button.dataset.kpi = kpi.id;
-    button.innerHTML = `<div class="kpi-head"><div class="kpi-title">${kpi.title}</div><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div><div class="value">${fmt(kpi.actual, kpi.unit)}</div><div class="delta ${st.key}">${delta(kpi.actual, kpi.expected)}</div></div><div class="expected">${kpi.group === 'weekly' ? 'Plan to weekly cutoff' : 'Plan to date'}: ${fmt(kpi.expected, kpi.unit)}</div>`;
+    button.innerHTML = `<div class="kpi-head"><div class="kpi-title">${kpi.title}</div><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div><div class="value">${fmt(kpi.actual, kpi.unit)}</div><div class="delta ${st.key}">${kpi.group === 'weekly' && !kpi.closed ? 'Pending close' : delta(kpi.actual, kpi.expected)}</div></div><div class="expected">${kpi.group === 'weekly' ? 'Weekly plan' : 'Plan to date'}: ${fmt(kpi.expected, kpi.unit)}</div>`;
     button.addEventListener('click', () => { state.selected = kpi.id; renderKpis(); renderDetail(); remember(); });
     get(kpi.group === 'primary' ? 'primaryKpis' : kpi.group === 'weekly' ? 'weeklyKpis' : 'leverKpis').append(button);
   }
@@ -74,23 +75,27 @@ function renderDetail() {
   activeChart?.destroy();
   activeChart = null;
   const kpi = kpisFor(data, state).kpis.find(item => item.id === state.selected);
-  const st = status(kpi.actual, kpi.expected);
+  const st = kpiStatus(kpi);
   const forecast = numeric(kpi.forecast);
   const headline = forecast ? kpi.forecast : kpi.actual;
-  const comparison = forecast ? delta(kpi.forecast, kpi.forecastTarget).replace('vs. plan', 'vs. month plan') : delta(kpi.actual, kpi.expected);
-  get('detail').innerHTML = `<div class="detail-title"><h2>${kpi.title}</h2><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div class="forecast-hero"><div class="fh-label">${forecast ? 'Projected month close' : 'Actual to date'}</div><div class="fh-value">${fmt(headline, kpi.unit)}</div><div class="fh-sub ${forecast ? status(kpi.forecast, kpi.forecastTarget).key : st.key}">${comparison}${forecast ? ` · ${fmt(kpi.forecastTarget, kpi.unit)}` : ''}</div></div><div class="stat-row"><div class="stat"><span class="stat-label">Actual to date</span><span class="stat-val">${fmt(kpi.actual, kpi.unit)}</span></div><div class="stat"><span class="stat-label">Plan to date</span><span class="stat-val">${fmt(kpi.expected, kpi.unit)}</span></div></div>${kpi.rangeLabel ? `<p class="source-period">${kpi.rangeLabel} · unique users in this window</p>` : ''}${forecast ? '<p class="source-period">Close projected at the current actual-to-plan pace.</p>' : ''}`;
-  if (kpi.id === 'active') {
-    const weekly = kpisFor(data, state).weekly;
-    const dates = Array.from({ length: 7 }, (_, index) => shiftDate(weekly.key, index));
-    const real = dates.map(date => data.active?.find(row => row.weekStart === weekly.key && row.date === date)?.cumulativeUnique ?? null);
-    const curve = activeProfile(data);
-    const planned = numeric(weekly.active.fullTarget) && curve ? curve.cumulative.map(factor => weekly.active.fullTarget * factor) : dates.map(() => null);
+  const weekly = kpi.group === 'weekly';
+  const comparison = weekly && !kpi.closed ? 'Pending weekly close' : forecast ? delta(kpi.forecast, kpi.forecastTarget).replace('vs. plan', 'vs. month plan') : delta(kpi.actual, kpi.expected);
+  get('detail').innerHTML = `<div class="detail-title"><h2>${kpi.title}</h2><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div class="forecast-hero"><div class="fh-label">${forecast ? 'Projected month close' : weekly ? 'Weekly actual' : 'Actual to date'}</div><div class="fh-value">${fmt(headline, kpi.unit)}</div><div class="fh-sub ${forecast ? status(kpi.forecast, kpi.forecastTarget).key : st.key}">${comparison}${forecast ? ` · ${fmt(kpi.forecastTarget, kpi.unit)}` : ''}</div></div><div class="stat-row"><div class="stat"><span class="stat-label">${weekly ? 'Weekly actual' : 'Actual to date'}</span><span class="stat-val">${fmt(kpi.actual, kpi.unit)}</span></div><div class="stat"><span class="stat-label">${weekly ? 'Weekly plan' : 'Plan to date'}</span><span class="stat-val">${fmt(kpi.expected, kpi.unit)}</span></div></div>${kpi.rangeLabel ? `<p class="source-period">${kpi.rangeLabel} · ${kpi.id === 'active' ? 'unique users for the full week' : 'trips per unique user for the full week'}</p>` : ''}${forecast ? '<p class="source-period">Close projected at the current actual-to-plan pace.</p>' : ''}`;
+  if (weekly) {
+    const weeks = weeksForMonth(state.month);
+    const values = weeks.map(week => weeklyMetrics(data, week.key)[kpi.id]);
+    const real = values.map(value => value.actual), planned = values.map(value => value.expected);
+    const legend = document.createElement('div');
+    legend.className = 'chart-legend';
+    legend.setAttribute('aria-label', 'Weekly equity chart legend');
+    legend.innerHTML = '<span><i class="legend-line plan"></i>Plan</span><span><i class="legend-line"></i>Actual</span>';
+    get('detail').append(legend);
     const block = document.createElement('div');
     block.className = 'chart-wrap';
     block.style.marginTop = '16px';
-    block.innerHTML = '<canvas id="activeWeeklyChart" role="img" aria-label="Weekly cumulative unique users versus expected"></canvas>';
+    block.innerHTML = '<canvas id="equityWeeklyChart" role="img" aria-label="Weekly actual versus weekly plan"></canvas>';
     get('detail').append(block);
-    activeChart = new Chart(get('activeWeeklyChart'), chartConfig(dates.map(formatDate), real, planned, 'number', true));
+    activeChart = new Chart(get('equityWeeklyChart'), chartConfig(weeks.map(week => formatDate(week.key)), real, planned, kpi.unit, true));
   }
 }
 

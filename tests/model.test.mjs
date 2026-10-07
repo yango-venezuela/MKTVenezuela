@@ -19,6 +19,8 @@ function sample() {
       { date: '2026-10-06', weekStart: '2026-10-05', weekEnd: '2026-10-11', cumulativeUnique: 70, dailyUnique: 50, weeklyUnique: 100 },
     ],
     monthlyTargets: { '2026-10': { trips: 1000, gmv: 2000, new: 50, installs: 100 } },
+    weeklyPlans: { '2026-10-05': { active: 100, frequency: 2.4 } },
+    weeklyActuals: [{ weekStart: '2026-10-05', weekEnd: '2026-10-11', activeUnique: 100, trips: 300, status: 'closed' }],
     meta: { cutoff: '2026-10-06', month: '2026-10' },
   };
 }
@@ -27,20 +29,21 @@ test('calendar dates do not move back one day in Caracas', () => {
   assert.equal(formatDate('2026-10-01'), 'Oct 1');
   assert.equal(weekStart('2026-10-06'), '2026-10-05');
 });
-test('weekly frequency uses matching trips and deduplicated users at the cutoff', () => {
-  const values = weeklyMetrics(sample(), '2026-10-05');
-  assert.equal(values.active.actual, 70);
-  assert.equal(values.active.fullTarget, 350);
-  assert.equal(values.active.expected, 350 * activeProfile(sample()).cumulative[1]);
-  assert.equal(values.frequency.actual, 300 / 70);
-  assert.equal(values.frequency.expected, 200 / (350 * activeProfile(sample()).cumulative[1]));
+test('weekly frequency uses the closed weekly numerator and its explicit weekly plan', () => {
+  const data = sample(); data.meta.cutoff = '2026-10-11';
+  const values = weeklyMetrics(data, '2026-10-05');
+  assert.equal(values.active.actual, 100);
+  assert.equal(values.active.fullTarget, 100);
+  assert.equal(values.active.expected, 100);
+  assert.equal(values.frequency.actual, 3);
+  assert.equal(values.frequency.expected, 2.4);
 });
-test('a missing trip day prevents a frequency for an incomplete numerator', () => {
-  const data = sample(); data.days[0].tripsAct = null;
-  assert.equal(weeklyMetrics(data, '2026-10-05').frequency.actual, null);
+test('closed weekly data does not depend on summing daily trips or users', () => {
+  const data = sample(); data.meta.cutoff = '2026-10-11'; data.days[0].tripsAct = null;
+  assert.equal(weeklyMetrics(data, '2026-10-05').frequency.actual, 3);
 });
 test('a missing active count does not become zero or an inferred unique count', () => {
-  const data = sample(); data.active = [];
+  const data = sample(); data.meta.cutoff = '2026-10-11'; data.weeklyActuals = [];
   const values = weeklyMetrics(data, '2026-10-05');
   assert.equal(values.active.actual, null);
   assert.equal(values.frequency.actual, null);
@@ -49,7 +52,7 @@ test('historical curve is derived only from complete deduplicated weeks', () => 
   assert.deepEqual(activeProfile(sample()).cumulative, [.2, .4, .55, .7, .8, .9, 1]);
   const data = sample(); data.active = data.active.slice(7);
   assert.equal(activeProfile(data), null);
-  assert.equal(weeklyMetrics(data, '2026-10-05').active.expected, null);
+  assert.equal(weeklyMetrics(data, '2026-10-05').active.expected, 100);
 });
 test('week charts change their date window and leave future actuals blank', () => {
   const result = chartSeries(sample(), { period: 'week', week: '2026-10-05' }, 'trips', 'cum');
