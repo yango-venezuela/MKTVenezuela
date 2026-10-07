@@ -9,7 +9,7 @@ const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(va
 const number = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
 
 export function gateConfig(username, password, salt = randomBytes(16).toString('hex')) {
-  if (!username || typeof password !== 'string' || password.length < 12) throw new Error('El acceso de Pages requiere usuario y una clave de al menos 12 caracteres.');
+  if (!username || typeof password !== 'string' || password.length < 8 || password.length > 256) throw new Error('El acceso visual de Pages requiere usuario y una clave de entre 8 y 256 caracteres.');
   const iterations = 150000;
   return { username, salt, iterations, verifier: pbkdf2Sync(password, Buffer.from(salt, 'hex'), iterations, 32, 'sha256').toString('hex') };
 }
@@ -39,8 +39,11 @@ export function publicSnapshot(snapshot) {
 
 export async function buildPages({ snapshot, gate, output = path.join(root, 'dist-pages'), allowPublicData = false }) {
   if (!allowPublicData) throw new Error('La publicacion exige confirmar que los datos seran publicos.');
-  if (!gate?.username || !/^[a-f0-9]{32}$/.test(gate.salt) || !/^[a-f0-9]{64}$/.test(gate.verifier) || !Number.isInteger(gate.iterations) || gate.iterations < 100000) throw new Error('Configuracion de acceso invalida.');
-  const safeGate = { username: gate.username, salt: gate.salt, iterations: gate.iterations, verifier: gate.verifier };
+  const users = Array.isArray(gate?.users) ? gate.users : [gate];
+  if (!users.length || users.some(user => !user?.username || !/^[a-f0-9]{32}$/.test(user.salt) || !/^[a-f0-9]{64}$/.test(user.verifier) || !Number.isInteger(user.iterations) || user.iterations < 100000)
+    || new Set(users.map(user => user.username)).size !== users.length) throw new Error('Configuracion de acceso invalida.');
+  const safeUsers = users.map(({ username, salt, iterations, verifier }) => ({ username, salt, iterations, verifier }));
+  const safeGate = Array.isArray(gate.users) ? { users: safeUsers } : safeUsers[0];
   await fs.mkdir(output, { recursive: true });
   for (const directory of ['assets', 'vendor']) await fs.mkdir(path.join(output, directory), { recursive: true });
   for (const file of ['index.html', 'login.html', 'styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'chart-weeks.js', 'performance.js']) {

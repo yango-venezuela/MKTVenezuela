@@ -1,7 +1,12 @@
 export const sessionKey = 'measurement-pages-session';
 
+export function gateUser(config, username) {
+  return (Array.isArray(config.users) ? config.users : [config]).find(user => user.username === username);
+}
+
 export function validSession(session, config, now = Date.now()) {
-  return !!session && session.username === config.username && session.version === config.verifier
+  const user = session && gateUser(config, session.username);
+  return !!user && session.version === user.verifier
     && Number.isFinite(session.expires) && session.expires > now;
 }
 

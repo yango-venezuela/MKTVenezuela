@@ -1,4 +1,4 @@
-import { sessionKey, validSession, verifyGatePassword } from './gate.js';
+import { sessionKey, gateUser, validSession, verifyGatePassword } from './gate.js';
 
 export const entryUrl = './index.html';
 let configuration;
@@ -12,8 +12,8 @@ async function config() {
 }
 
 export async function signIn(username, password) {
-  const gate = await config();
-  if (username !== gate.username || !await verifyGatePassword(password, gate)) throw new Error('Usuario o clave incorrectos.');
+  const gate = gateUser(await config(), username);
+  if (!gate || !await verifyGatePassword(password, gate)) throw new Error('Usuario o clave incorrectos.');
   localStorage.setItem(sessionKey, JSON.stringify({ username, version: gate.verifier, expires: Date.now() + 8 * 60 * 60 * 1000 }));
 }
 

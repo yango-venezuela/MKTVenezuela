@@ -24,6 +24,10 @@ servidor, en `../measurement-pages-access.txt`. Su verificador se conserva en
 `../measurement-pages-gate.json`, tambien fuera del repositorio. No publica la
 clave en texto: el navegador recibe el verificador, que permite probar claves
 offline y NO constituye control de acceso a los datos estaticos.
+El archivo privado de verificadores admite tambien `{ "users": [...] }` para
+varios accesos visuales. Cada usuario mantiene su propio verificador y sesion;
+agregar uno no invalida el acceso de los demas. Nunca incluir claves en texto
+en `gate-config.json` ni en el repositorio.
 Para exportaciones posteriores se reutiliza ese mismo verificador:
 
 ```sh

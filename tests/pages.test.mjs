@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { buildPages, gateConfig, publicSnapshot } from '../scripts/build-pages.mjs';
-import { validSession, verifyGatePassword } from '../pages/gate.js';
+import { gateUser, validSession, verifyGatePassword } from '../pages/gate.js';
 
 const password = 'example-password-for-tests';
 const gate = gateConfig('example', password, '00000000000000000000000000000000');
@@ -19,6 +19,31 @@ test('visual sessions expire and reset when the gate configuration changes', () 
   assert.equal(validSession({ username: 'example', version: gate.verifier, expires: 101 }, gate, 100), true);
   assert.equal(validSession({ username: 'example', version: gate.verifier, expires: 100 }, gate, 100), false);
   assert.equal(validSession({ username: 'example', version: 'old', expires: 101 }, gate, 100), false);
+});
+test('multiple visual users keep independent passwords and existing sessions', async () => {
+  const secondPassword = 'second-test';
+  const second = gateConfig('second', secondPassword, '11111111111111111111111111111111');
+  const config = { users: [gate, second] };
+  assert.equal(gateUser(config, 'missing'), undefined);
+  assert.equal(gateUser(config, 'example'), gate);
+  assert.equal(await verifyGatePassword(secondPassword, gateUser(config, 'second')), true);
+  assert.equal(await verifyGatePassword(secondPassword, gateUser(config, 'example')), false);
+  assert.equal(validSession({ username: 'example', version: gate.verifier, expires: 101 }, config, 100), true);
+  assert.equal(validSession({ username: 'second', version: gate.verifier, expires: 101 }, config, 100), false);
+  assert.equal(validSession({ username: 'second', version: second.verifier, expires: 101 }, config, 100), true);
+});
+test('multiuser export strips plaintext and rejects duplicate usernames', async () => {
+  const output = await fs.mkdtemp(path.join(os.tmpdir(), 'measurement-users-'));
+  const second = gateConfig('second', 'second-test');
+  try {
+    await buildPages({ snapshot, gate: { users: [{ ...gate, password }, { ...second, password: 'second-test', token: 'must-not-publish' }] }, output, allowPublicData: true });
+    const published = JSON.parse(await fs.readFile(path.join(output, 'gate-config.json'), 'utf8'));
+    assert.equal(published.users.length, 2);
+    assert.ok(!JSON.stringify(published).includes(password));
+    assert.ok(!JSON.stringify(published).includes('second-test'));
+    assert.ok(!JSON.stringify(published).includes('must-not-publish'));
+    await assert.rejects(buildPages({ snapshot, gate: { users: [gate, gate] }, output, allowPublicData: true }), /invalida/);
+  } finally { await fs.rm(output, { recursive: true }); }
 });
 test('publishable snapshot includes aggregates only, never credentials or identifiers', () => {
   const result = publicSnapshot(snapshot);
