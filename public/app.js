@@ -1,4 +1,4 @@
-import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeklyMetrics, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate } from './model.js?access=2';
+import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeklyMetrics, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate } from './model.js?access=3';
 import { loadDashboard, signOut } from './runtime.js?access=2';
 import { weeklySeparators } from './chart-weeks.js';
 import { performanceFor, performanceSeries } from './performance.js';
@@ -56,7 +56,7 @@ function renderWindows() {
 function renderKpis() {
   const result = kpisFor(data, state);
   for (const id of ['primaryKpis', 'leverKpis', 'weeklyKpis']) get(id).innerHTML = '';
-  get('weeklyCaption').textContent = `Weekly · ${result.weekly.label}`;
+  get('weeklyCaption').textContent = `${state.period === 'month' && result.weekly.closed ? 'Latest closed' : 'Weekly'} · ${result.weekly.label}`;
   for (const kpi of result.kpis) {
     const st = kpiStatus(kpi);
     const button = document.createElement('button');

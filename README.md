@@ -97,8 +97,10 @@ para evitar escoger arbitrariamente un plan.
 
 La frecuencia plan procede de F, igual que el plan de activos procede de E.
 Los planes nunca se derivan del reparto diario de viajes ni
-se prorratea el plan de activos. En Month, Equity muestra la semana actual;
-en Week sigue la seleccion. Una semana en curso muestra el plan completo y
+se prorratea el plan de activos. En Month, Equity muestra la ultima semana cerrada
+con reales del mes y lo indica como `Latest closed`; en Week sigue la seleccion.
+Si todavia no hay cierres disponibles, muestra la semana actual. Una semana en
+curso muestra el plan completo y
 `Pending close`, sin evaluar un semaforo contra una fraccion de semana.
 
 Los reales cerrados proceden de los registros Caracas / Total de `6. DB Weekly`:

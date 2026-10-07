@@ -64,6 +64,23 @@ test('closed frequency divides weekly trips by same-window unique users and avoi
   data.weeklyActuals[0].activeUnique = 0;
   assert.equal(weeklyMetrics(data, '2026-10-05').frequency.actual, null);
 });
+test('Month shows the latest available closed week while Week respects its explicit selection', () => {
+  const data = sample();
+  data.weeklyPlans['2026-09-28'] = { active: 100, frequency: 2.1 };
+  data.weeklyActuals.push({ weekStart: '2026-09-28', weekEnd: '2026-10-04', activeUnique: 110, trips: 250, status: 'closed' });
+  const monthly = kpisFor(data, { period: 'month', month: '2026-10' });
+  assert.equal(monthly.weekly.key, '2026-09-28');
+  assert.equal(monthly.kpis.find(kpi => kpi.id === 'active').actual, 110);
+  assert.equal(monthly.kpis.find(kpi => kpi.id === 'active').expected, 100);
+  assert.equal(monthly.kpis.find(kpi => kpi.id === 'frequency').actual, 250 / 110);
+  assert.equal(monthly.kpis.find(kpi => kpi.id === 'frequency').expected, 2.1);
+  assert.equal(kpisFor(data, { period: 'week', month: '2026-10', week: '2026-10-05' }).weekly.active.actual, null);
+});
+test('a month without a matching closed week does not inherit a different months real values', () => {
+  const data = sample();
+  data.weeklyActuals.push({ weekStart: '2026-09-21', weekEnd: '2026-09-27', activeUnique: 110, trips: 250, status: 'closed' });
+  assert.equal(kpisFor(data, { period: 'month', month: '2026-10' }).weekly.key, '2026-10-05');
+});
 test('daily allocations and historical DAU curves never substitute for missing weekly plans', () => {
   const data = sample(); data.weeklyPlans = {};
   assert.equal(weeklyTarget(data, '2026-10-05'), null);
