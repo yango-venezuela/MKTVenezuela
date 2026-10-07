@@ -36,12 +36,15 @@ test('static export works under a project subpath and excludes backend credentia
     await buildPages({ snapshot, gate: { ...gate, password, SESSION_SECRET: 'must-not-publish' }, output, allowPublicData: true });
     const html = await fs.readFile(path.join(output, 'index.html'), 'utf8');
     assert.match(html, /src="\.\/app.js"/);
+    assert.match(html, /src="\.\/assets\/yango.png"/);
     assert.doesNotMatch(html, /(?:src|href)="\//);
     const files = await fs.readdir(output);
     assert.ok(files.includes('data.json'));
     assert.ok(!files.includes('.env'));
     assert.ok(!files.includes('server.mjs'));
     assert.ok((await fs.stat(path.join(output, 'vendor/lucide.js'))).size < 30000);
+    assert.ok((await fs.stat(path.join(output, 'assets/yango.png'))).size > 0);
+    assert.ok(files.includes('chart-weeks.js'));
     const publishedGate = await fs.readFile(path.join(output, 'gate-config.json'), 'utf8');
     assert.ok(!publishedGate.includes(password));
     assert.ok(!publishedGate.includes('must-not-publish'));

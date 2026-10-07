@@ -10,7 +10,7 @@ export function activeProfile(data) {
   ]));
 }
 export const fields = { trips: ['tripsAct', 'tripsBdg'], gmv: ['gmvAct', 'gmvBdg'], new: ['newAct', 'newBdg'], installs: ['installsAct', 'installsBdg'] };
-export const names = { trips: 'Completed trips', gmv: 'GMV', new: 'New users', installs: 'Installs', ticket: 'Average fare', active: 'Active Users · weekly', frequency: 'Trips per Active User · weekly' };
+export const names = { trips: 'Completed trips', gmv: 'GMV', new: 'New users', installs: 'Installs', ticket: 'Average fare', active: 'Active Users', frequency: 'Trips per Active User' };
 export const numeric = value => typeof value === 'number' && Number.isFinite(value);
 export const dateObject = date => new Date(`${date}T00:00:00Z`);
 export function shiftDate(date, offset) { const day = dateObject(date); day.setUTCDate(day.getUTCDate() + offset); return day.toISOString().slice(0, 10); }
@@ -20,6 +20,17 @@ export const formatDate = date => new Intl.DateTimeFormat('en-US', { month: 'sho
 export const monthLabel = month => new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(dateObject(`${month}-01`));
 export const rangeDates = (start, end) => { const dates = []; for (let date = start; date <= end; date = shiftDate(date, 1)) dates.push(date); return dates; };
 export function monthDates(month) { const first = `${month}-01`; const next = dateObject(first); next.setUTCMonth(next.getUTCMonth() + 1); return rangeDates(first, shiftDate(next.toISOString().slice(0, 10), -1)); }
+export function chartDates(state) { if (state.period === 'week') return rangeDates(state.week, shiftDate(state.week, 6)); const month = monthDates(state.month); return rangeDates(weekStart(month[0]), month.at(-1)); }
+
+export function chartWeeks(dates) {
+  const groups = [];
+  dates.forEach((date, index) => {
+    const key = weekStart(date);
+    if (groups.at(-1)?.key !== key) groups.push({ key, startIndex: index, endIndex: index });
+    else groups.at(-1).endIndex = index;
+  });
+  return groups;
+}
 
 export function weeksForMonth(month) {
   return [...new Set(monthDates(month).map(weekStart))].map(start => ({ key: start, end: shiftDate(start, 6), label: `${formatDate(start)}–${formatDate(shiftDate(start, 6))}` }));
@@ -108,14 +119,14 @@ export function kpisFor(data, state) {
 }
 
 export function chartSeries(data, state, metric, mode) {
-  const dates = state.period === 'week' ? rangeDates(state.week, shiftDate(state.week, 6)) : monthDates(state.month);
+  const dates = chartDates(state);
   const [actualField, planField] = fields[metric];
   const rows = dates.map(date => data.days.find(day => day.date === date));
   const actual = rows.map(day => day && day.date <= data.meta.cutoff && numeric(day[actualField]) ? day[actualField] : null);
   const plan = rows.map(day => day && numeric(day[planField]) ? day[planField] : null);
   if (mode === 'daily') return { dates, actual, plan };
   // A gap prevents a cumulative count from being presented as a complete sum.
-  const accumulate = values => { let total = 0, complete = true; return values.map(value => { if (!numeric(value)) { complete = false; return null; } if (!complete) return null; total += value; return total; }); };
+  const accumulate = values => { let total = 0, complete = true; return values.map((value, index) => { if (state.period === 'month' && !dates[index].startsWith(state.month)) return null; if (!numeric(value)) { complete = false; return null; } if (!complete) return null; total += value; return total; }); };
   return { dates, actual: accumulate(actual), plan: accumulate(plan) };
 }
 

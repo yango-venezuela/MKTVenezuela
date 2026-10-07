@@ -1,5 +1,6 @@
 import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate, activeProfile } from './model.js';
 import { loadDashboard, signOut } from './runtime.js';
+import { weeklySeparators } from './chart-weeks.js';
 
 let data;
 let state = { period: 'month', month: '', week: '', selected: 'trips', metric: 'trips', chartMode: 'daily' };
@@ -90,22 +91,24 @@ function renderDetail() {
   }
 }
 
-function chartConfig(labels, real, expected, metricUnit, small = false) {
+function chartConfig(labels, real, expected, metricUnit, small = false, dates = null) {
   return {
     type: 'line',
+    plugins: dates ? [weeklySeparators(dates, data.meta.cutoff)] : [],
     data: { labels, datasets: [
       { label: 'Plan', data: expected, borderColor: '#8a8f98', borderDash: [5, 4], pointRadius: 0, tension: .2 },
       { label: 'Actual', data: real, borderColor: '#ff1a1a', backgroundColor: 'rgba(255,26,26,.10)', fill: true, pointRadius: 3, tension: .2, spanGaps: false },
     ] },
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: dates ? 30 : 0 } },
       animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 200 },
       interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: {
         label: context => `${context.dataset.label}: ${fmt(context.parsed.y, metricUnit)}`,
         afterBody: items => { const index = items[0].dataIndex; if (!numeric(real[index]) || !numeric(expected[index])) return 'Difference: no data'; return `Difference: ${fmt(real[index] - expected[index], metricUnit)} (${percent(change(real[index], expected[index]))})`; },
       } } },
-      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: small ? 4 : 8, maxRotation: 0, font: { family: 'Arial', size: 11 } } }, y: { beginAtZero: true, ticks: { maxTicksLimit: small ? 4 : 6, font: { family: 'Arial', size: 11 }, callback: value => fmt(value, metricUnit) } } },
+      scales: { x: { grid: { display: false }, ticks: { autoSkip: !dates || window.matchMedia('(max-width:760px)').matches, maxTicksLimit: dates ? 34 : small ? 4 : 8, maxRotation: 0, font: { family: 'Arial', size: 11 }, callback: value => dates ? Number(dates[value].slice(-2)) : labels[value] } }, y: { beginAtZero: true, ticks: { maxTicksLimit: small ? 4 : 6, font: { family: 'Arial', size: 11 }, callback: value => fmt(value, metricUnit) } } },
     },
   };
 }
@@ -113,10 +116,10 @@ function chartConfig(labels, real, expected, metricUnit, small = false) {
 function renderChart() {
   chart?.destroy();
   const series = chartSeries(data, state, state.metric, state.chartMode);
-  chart = new Chart(get('mainChart'), chartConfig(series.dates.map(formatDate), series.actual, series.plan, unit(state.metric)));
+  chart = new Chart(get('mainChart'), chartConfig(series.dates.map(formatDate), series.actual, series.plan, unit(state.metric), false, series.dates));
   const window = state.period === 'week' ? `${formatDate(state.week)}–${formatDate(shiftDate(state.week, 6))}` : monthLabel(state.month);
   const missing = series.dates.some(date => !data.days.some(day => day.date === date));
-  get('chartNote').textContent = `${names[state.metric]} · ${state.chartMode === 'daily' ? 'daily' : 'cumulative'} · ${window}. Actuals through ${data.meta.cutoff ? formatDate(data.meta.cutoff) : 'No data'}.${missing ? ' Incomplete window: some dates are unavailable.' : ''}`;
+  get('chartNote').textContent = `${names[state.metric]} · ${state.chartMode === 'daily' ? 'daily' : state.period === 'month' ? `cumulative from ${formatDate(`${state.month}-01`)}` : 'cumulative'} · ${window} · ${formatDate(series.dates[0])}–${formatDate(series.dates.at(-1))}. Actuals through ${data.meta.cutoff ? formatDate(data.meta.cutoff) : 'No data'}.${missing ? ' Incomplete window: some dates are unavailable.' : ''}`;
   for (const button of get('metricSeg').querySelectorAll('button')) { button.classList.toggle('active', button.dataset.m === state.metric); button.setAttribute('aria-pressed', String(button.dataset.m === state.metric)); }
   for (const button of get('modeSeg').querySelectorAll('button')) { const selected = button.dataset.mode === (state.chartMode === 'daily' ? 'daily' : 'cum'); button.classList.toggle('active', selected); button.setAttribute('aria-pressed', String(selected)); }
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chartSeries, focusStatus, focusCell, weekStart, formatDate, weeklyMetrics, kpisFor, activeProfile, shiftDate } from '../public/model.js';
+import { chartSeries, chartDates, chartWeeks, focusStatus, focusCell, weekStart, formatDate, weeklyMetrics, kpisFor, activeProfile, shiftDate } from '../public/model.js';
 import { parseTracker } from '../lib/sheets.mjs';
 
 function sample() {
@@ -56,6 +56,28 @@ test('week charts change their date window and leave future actuals blank', () =
   assert.equal(result.dates.length, 7);
   assert.deepEqual(result.actual, [150, 300, null, null, null, null, null]);
   assert.deepEqual(result.plan, [100, 200, 300, 400, 500, 600, 700]);
+});
+test('monthly chart starts on the Monday of its first week without changing monthly KPIs', () => {
+  const dates = chartDates({ period: 'month', month: '2026-10' });
+  assert.equal(dates[0], '2026-09-28');
+  assert.equal(dates.at(-1), '2026-10-31');
+  assert.equal(dates.length, 34);
+  const weeks = chartWeeks(dates);
+  assert.deepEqual(weeks.map(week => [week.startIndex, week.endIndex]), [[0, 6], [7, 13], [14, 20], [21, 27], [28, 33]]);
+  const data = sample(); data.days.unshift({ date: '2026-09-28', tripsAct: 9999, tripsBdg: 9999 });
+  assert.equal(kpisFor(data, { period: 'month', month: '2026-10' }).kpis.find(kpi => kpi.id === 'trips').actual, 300);
+});
+test('missing September context does not blank the October cumulative chart', () => {
+  const data = { days: [{ date: '2026-10-01', tripsAct: 10, tripsBdg: 12 }, { date: '2026-10-02', tripsAct: 20, tripsBdg: 24 }], meta: { cutoff: '2026-10-02' } };
+  const result = chartSeries(data, { period: 'month', month: '2026-10' }, 'trips', 'cumulative');
+  assert.deepEqual(result.actual.slice(0, 6), [null, null, null, 10, 30, null]);
+  assert.deepEqual(result.plan.slice(0, 6), [null, null, null, 12, 36, null]);
+});
+test('September values provide daily context but do not enter October cumulative totals', () => {
+  const data = { days: [{ date: '2026-09-30', tripsAct: 1000, tripsBdg: 2000 }, { date: '2026-10-01', tripsAct: 10, tripsBdg: 12 }], meta: { cutoff: '2026-10-01' } };
+  const state = { period: 'month', month: '2026-10' };
+  assert.equal(chartSeries(data, state, 'trips', 'daily').actual[2], 1000);
+  assert.deepEqual(chartSeries(data, state, 'trips', 'cumulative').actual.slice(0, 4), [null, null, null, 10]);
 });
 test('focus map labels partial calendar weeks instead of claiming a full weekly total', () => {
   const data = sample(); data.days = data.days.slice(1);

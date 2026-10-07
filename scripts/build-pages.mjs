@@ -40,13 +40,13 @@ export async function buildPages({ snapshot, gate, output = path.join(root, 'dis
   const safeGate = { username: gate.username, salt: gate.salt, iterations: gate.iterations, verifier: gate.verifier };
   await fs.mkdir(output, { recursive: true });
   for (const directory of ['assets', 'vendor']) await fs.mkdir(path.join(output, directory), { recursive: true });
-  for (const file of ['index.html', 'login.html', 'styles.css', 'login.css', 'app.js', 'login.js', 'model.js']) {
+  for (const file of ['index.html', 'login.html', 'styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'chart-weeks.js']) {
     let content = await fs.readFile(path.join(root, 'public', file), 'utf8');
     if (file.endsWith('.html')) content = content.replace(/\b(href|src)="\//g, '$1="./');
     await fs.writeFile(path.join(output, file), content);
   }
   for (const file of ['runtime.js', 'gate.js']) await fs.copyFile(path.join(root, 'pages', file), path.join(output, file));
-  await fs.copyFile(path.join(root, 'public/assets/yango.svg'), path.join(output, 'assets/yango.svg'));
+  await fs.copyFile(path.join(root, 'public/assets/yango.png'), path.join(output, 'assets/yango.png'));
   await fs.copyFile(path.join(root, 'node_modules/chart.js/dist/chart.umd.js'), path.join(output, 'vendor/chart.js'));
   await fs.copyFile(path.join(root, 'node_modules/chart.js/LICENSE.md'), path.join(output, 'vendor/chart-LICENSE.txt'));
   await fs.copyFile(path.join(root, 'node_modules/lucide/LICENSE'), path.join(output, 'vendor/lucide-LICENSE.txt'));
