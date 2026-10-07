@@ -37,7 +37,8 @@
   <div id="connectionError" class="connection-error" role="alert" hidden></div>
 
   <main class="main">
-    <section class="stack">
+    <div class="business-section">
+    <section class="stack business-overview">
       <div>
         <div class="section-title"><h2>Primary results</h2></div>
         <div class="hero-grid" id="primaryKpis"></div>
@@ -47,7 +48,17 @@
         <div class="section-title"><h2>Levers behind the result</h2></div>
         <div class="lever-layout"><div class="lever-grid" id="leverKpis"></div><div class="weekly-group" role="group" aria-label="Equity"><div class="weekly-caption"><strong>Equity</strong><span id="weeklyCaption">Weekly</span></div><div class="weekly-grid" id="weeklyKpis"></div></div></div>
       </div>
+    </section>
 
+    <aside class="detail-sidebar" aria-label="Selected KPI detail">
+      <section class="panel" id="detail" aria-live="polite"></section>
+      <section class="panel focus-card" style="border-left:4px solid var(--yango-red);background:#fff3f3;">
+        <strong>This week's focus</strong>
+        <p id="weekFocus" style="margin:6px 0 0;"></p>
+      </section>
+    </aside>
+
+    <section class="stack business-analysis">
       <section class="panel">
         <div class="chart-controls">
           <h3 style="margin:0;">Actual vs. Plan</h3>
@@ -77,14 +88,23 @@
       
     </section>
 
-    <aside>
-      <section class="panel" id="detail"></section>
-      <section class="panel focus-card" style="border-left:4px solid var(--yango-red);background:#fff3f3;">
-        <strong>This week's focus</strong>
-        <p id="weekFocus" style="margin:6px 0 0;"></p>
+    </div>
+    <section class="performance-section" aria-labelledby="performanceTitle">
+      <div class="section-title performance-heading"><h2 id="performanceTitle">Performance</h2><span id="performancePeriod" class="source-period"></span></div>
+      <div class="performance-grid" id="performanceKpis"></div>
+      <section class="panel performance-chart">
+        <div class="chart-controls">
+          <h3 style="margin:0;" id="performanceChartTitle">Daily spend</h3>
+          <div class="seg" id="performanceMetricSeg" aria-label="Performance metric">
+            <button type="button" data-performance="spend" class="active">Spend</button>
+            <button type="button" data-performance="paidCac">Paid CAC</button>
+          </div>
+        </div>
+        <div class="chart-legend" aria-label="Performance chart legend"><span id="performancePlanLegend"><i class="legend-line plan"></i>Plan</span><span><i class="legend-line"></i>Actual</span></div>
+        <div class="big-chart-wrap"><canvas id="performanceChart" role="img" aria-label="Daily spend actual versus plan"></canvas></div>
+        <p class="footnote" id="performanceChartNote"></p>
       </section>
-
-    </aside>
+    </section>
   </main>
 </div>
 

@@ -89,6 +89,36 @@ suma de planes diarios y la meta mensual se muestra, no se corrige en silencio.
 New users utiliza la columna `Act in Yango`; el resumen `Act wo BipBip` mide
 una poblacion diferente y no se intercambia automaticamente.
 
+### Performance
+
+Cuatro tarjetas (Spend, CPI, Paid Share y Paid CAC) siguen la vista mensual o
+semanal. El grafico diario alterna Spend y Paid CAC y mantiene las separaciones
+de semanas. Los datos vienen de `4. Daily Tracker!K1:AD37`.
+
+Spend suma los costos reales y compara con el plan diario al mismo corte. El
+pace es real/plan a fecha, no porcentaje de presupuesto consumido. La proyeccion
+mensual conserva el presupuesto de Spend del tracker. La banda de pace es +/-5%:
+sobregasto rojo, subejecucion amarilla y dentro de banda verde.
+
+CPI es gasto total/installs totales. Paid Share y Paid CAC usan los mismos
+usuarios nuevos `Act in Yango`; los usuarios atribuidos de cada dia se derivan
+como Paid Share diario por nuevos, igual que `7. DB Daily!U452:U457`.
+El share acumulado es atribuidos/nuevos, y CAC es gasto/atribuidos. No se promedian
+ratios diarios. Esto corrige la mezcla de poblaciones del resumen mensual
+actual del tracker, que pondera Paid Share con `Act wo BipBip` pero calcula CAC
+con `Act in Yango`, y puede producir pequenas diferencias respecto a ese resumen.
+
+El CPI plan procede de la celda Z2 del tracker; Paid Share y Paid CAC quedan sin
+target hasta confirmacion. Se configuran por mes en `performanceTargets`.
+Un `paidCacBdg` diario tiene prioridad sobre el target mensual en el grafico.
+Los costos menores al target son favorables; Paid Share conserva una comparacion
+neutral porque mas adquisicion pagada no implica mejor performance.
+El corte de performance es independiente del de viajes. Ceros se conservan,
+denominadores nulos o sin usuarios e informacion incompleta no generan ratios.
+La publicacion de los agregados de performance y del verificador de una clave
+nueva exclusiva para Pages fue autorizada expresamente el 7 de octubre de 2026.
+El login sigue siendo visual y los datos publicados se pueden descargar sin clave.
+
 Sin conexion de Google, el servidor puede mostrar una lectura privada en
 `data/snapshot.json`. Esa lectura queda identificada como guardada y conserva
 su fecha de corte. No se incluye en GitHub. La conexion en este chat no se

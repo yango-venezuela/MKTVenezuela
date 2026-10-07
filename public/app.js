@@ -1,13 +1,15 @@
 import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate, activeProfile } from './model.js';
 import { loadDashboard, signOut } from './runtime.js';
 import { weeklySeparators } from './chart-weeks.js';
+import { performanceFor, performanceSeries } from './performance.js';
 
 let data;
-let state = { period: 'month', month: '', week: '', selected: 'trips', metric: 'trips', chartMode: 'daily' };
+let state = { period: 'month', month: '', week: '', selected: 'trips', metric: 'trips', chartMode: 'daily', performanceMetric: 'spend' };
 let chart;
 let activeChart;
+let performanceChart;
 const get = id => document.getElementById(id);
-const fmt = (value, unit = 'number') => !numeric(value) ? 'No data' : unit === 'usd' ? '$' + value.toLocaleString('en-US', { maximumFractionDigits: value < 10 ? 2 : 0 }) : unit === 'ratio' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+const fmt = (value, unit = 'number') => !numeric(value) ? 'No data' : unit === 'pct' ? `${(value * 100).toFixed(1)}%` : unit === 'cost' ? '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : unit === 'usd' ? '$' + value.toLocaleString('en-US', { maximumFractionDigits: value < 10 ? 2 : 0 }) : unit === 'ratio' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : value.toLocaleString('en-US', { maximumFractionDigits: 0 });
 const unit = id => ['gmv', 'ticket'].includes(id) ? 'usd' : id === 'frequency' ? 'ratio' : 'number';
 const percent = value => numeric(value) ? `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%` : 'No comparison';
 const delta = (actual, expected) => numeric(actual) && numeric(expected) && expected === 0 ? 'Zero plan' : `${percent(change(actual, expected))}${numeric(change(actual, expected)) ? ' vs. plan' : ''}`;
@@ -124,6 +126,36 @@ function renderChart() {
   for (const button of get('modeSeg').querySelectorAll('button')) { const selected = button.dataset.mode === (state.chartMode === 'daily' ? 'daily' : 'cum'); button.classList.toggle('active', selected); button.setAttribute('aria-pressed', String(selected)); }
 }
 
+function renderPerformance() {
+  const summary = performanceFor(data, state);
+  get('performanceKpis').replaceChildren();
+  get('performancePeriod').textContent = summary.elapsed.length ? `${formatDate(summary.elapsed[0])}–${formatDate(summary.elapsed.at(-1))}` : 'No actuals in this window';
+  for (const kpi of summary.kpis) {
+    const card = document.createElement('article');
+    card.className = 'kpi performance-kpi';
+    const comparison = kpi.id === 'paidShare' && numeric(kpi.actual) && numeric(kpi.expected) ? `${((kpi.actual - kpi.expected) * 100).toFixed(1)} pp vs. target` : delta(kpi.actual, kpi.expected).replace('vs. plan', 'vs. target');
+    const pace = numeric(summary.pace) ? `Pace: ${(summary.pace * 100).toFixed(1)}%` : 'Pace pending';
+    const footer = kpi.id === 'spend' ? `Plan to date: ${fmt(kpi.expected, kpi.unit)}${numeric(summary.forecast) ? `<br>Projected close: ${fmt(summary.forecast, 'usd')} / ${fmt(summary.fullPlan, 'usd')}` : ''}` : `Target: ${numeric(kpi.expected) ? fmt(kpi.expected, kpi.unit) : 'Pending'}`;
+    card.innerHTML = `<div class="kpi-head"><h3 class="kpi-title">${kpi.title}</h3><span class="status ${kpi.status.key}"><i class="dot"></i>${kpi.status.label}</span></div><div><div class="value">${fmt(kpi.actual, kpi.unit)}</div><div class="delta ${kpi.status.key}">${kpi.id === 'spend' ? pace : comparison}</div></div><div class="expected">${footer}</div>`;
+    get('performanceKpis').append(card);
+  }
+  renderPerformanceChart();
+}
+
+function renderPerformanceChart() {
+  performanceChart?.destroy();
+  const metric = state.performanceMetric;
+  const series = performanceSeries(data, state, metric);
+  const title = metric === 'spend' ? 'Daily spend' : 'Daily Paid CAC';
+  get('performanceChartTitle').textContent = title;
+  get('performanceChart').setAttribute('aria-label', `${title} actual versus plan`);
+  const config = chartConfig(series.dates.map(formatDate), series.actual, series.plan, metric === 'spend' ? 'usd' : 'cost', false, series.dates);
+  performanceChart = new Chart(get('performanceChart'), config);
+  get('performancePlanLegend').hidden = !series.plan.some(numeric);
+  get('performanceChartNote').textContent = `${formatDate(series.dates[0])}–${formatDate(series.dates.at(-1))} · ${data.meta.performanceCutoff ? `Actuals through ${formatDate(data.meta.performanceCutoff)}` : 'Actuals pending'}${metric === 'paidCac' && !series.plan.some(numeric) ? ' · Target pending' : ''}`;
+  for (const button of get('performanceMetricSeg').querySelectorAll('button')) { const selected = button.dataset.performance === metric; button.classList.toggle('active', selected); button.setAttribute('aria-pressed', String(selected)); }
+}
+
 const focusOrder = ['trips', 'gmv', 'active', 'new', 'installs', 'frequency', 'ticket'];
 function renderFocusMap() {
   const weeks = weeksForMonth(state.month);
@@ -190,7 +222,7 @@ function renderWeekFocus() {
 }
 
 function remember() { try { localStorage.setItem('measurement-view', JSON.stringify(state)); } catch {} }
-function renderAll() { renderWindows(); renderMeta(); renderKpis(); renderDetail(); renderChart(); renderFocusMap(); renderWeekFocus(); window.lucide?.createIcons(); }
+function renderAll() { renderWindows(); renderMeta(); renderKpis(); renderDetail(); renderChart(); renderFocusMap(); renderWeekFocus(); renderPerformance(); window.lucide?.createIcons(); }
 async function load(refresh = false) {
   get('refreshData').disabled = true;
   get('connectionError').hidden = true;
@@ -202,6 +234,7 @@ async function load(refresh = false) {
     if (!weeks.some(week => week.key === state.week)) state.week = weekStart(data.meta.cutoff || `${state.month}-01`);
     if (!names[state.selected]) state.selected = 'trips';
     if (!fields[state.metric]) state.metric = 'trips';
+    if (!['spend', 'paidCac'].includes(state.performanceMetric)) state.performanceMetric = 'spend';
     renderAll();
   } catch (error) { get('connectionError').textContent = error.message; get('connectionError').hidden = false; }
   finally { get('refreshData').disabled = false; }
@@ -211,6 +244,7 @@ get('periodToggle').addEventListener('click', event => { const button = event.ta
 get('windowSelect').addEventListener('change', event => { if (state.period === 'month') { state.month = event.target.value; state.week = weeksForMonth(state.month)[0].key; } else state.week = event.target.value; renderAll(); remember(); });
 get('metricSeg').addEventListener('click', event => { const button = event.target.closest('button[data-m]'); if (!button || !data) return; state.metric = button.dataset.m; renderChart(); remember(); });
 get('modeSeg').addEventListener('click', event => { const button = event.target.closest('button[data-mode]'); if (!button || !data) return; state.chartMode = button.dataset.mode === 'daily' ? 'daily' : 'cum'; renderChart(); remember(); });
+get('performanceMetricSeg').addEventListener('click', event => { const button = event.target.closest('button[data-performance]'); if (!button || !data) return; state.performanceMetric = button.dataset.performance; renderPerformanceChart(); remember(); });
 get('refreshData').addEventListener('click', () => load(true));
 get('logout').addEventListener('click', () => signOut());
 try { const saved = JSON.parse(localStorage.getItem('measurement-view')); if (saved && ['month', 'week'].includes(saved.period)) state = { ...state, ...saved }; } catch {}

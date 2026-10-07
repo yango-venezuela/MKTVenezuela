@@ -15,7 +15,7 @@ export function gateConfig(username, password, salt = randomBytes(16).toString('
 }
 
 export function publicSnapshot(snapshot) {
-  const fields = ['tripsBdg', 'tripsAct', 'gmvBdg', 'gmvAct', 'newBdg', 'newAct', 'newWithoutBipBip', 'installsBdg', 'installsAct', 'activePlanAllocation'];
+  const fields = ['tripsBdg', 'tripsAct', 'gmvBdg', 'gmvAct', 'newBdg', 'newAct', 'newWithoutBipBip', 'installsBdg', 'installsAct', 'activePlanAllocation', 'spendBdg', 'spendAct', 'cpiAct', 'paidShareAct', 'paidCacAct', 'paidUsersAct', 'paidCacBdg'];
   const days = (snapshot.days || []).map(row => ({ date: date(row.date), ...Object.fromEntries(fields.map(field => [field, number(row[field])])) })).filter(row => row.date);
   if (!days.length) throw new Error('No hay datos agregados validos para publicar.');
   const active = (snapshot.active || []).map(row => ({
@@ -28,8 +28,11 @@ export function publicSnapshot(snapshot) {
   const warnings = (snapshot.meta?.warnings || []).filter(item => ['trips', 'gmv', 'new', 'installs'].includes(item.metric)).map(item => ({
     metric: item.metric, kind: 'plan-mismatch', monthlyBudget: number(item.monthlyBudget), dailyPlanTotal: number(item.dailyPlanTotal),
   }));
-  return { days, active, monthlyTargets, meta: {
+  const performanceTargets = Object.fromEntries(Object.entries(snapshot.performanceTargets || {}).filter(([month]) => /^\d{4}-\d{2}$/.test(month))
+    .map(([month, targets]) => [month, Object.fromEntries(['spend', 'cpi', 'paidShare', 'paidCac'].map(key => [key, number(targets[key])]))]));
+  return { days, active, monthlyTargets, performanceTargets, meta: {
     cutoff: date(snapshot.meta?.cutoff), month: days.at(-1).date.slice(0, 7),
+    performanceCutoff: date(snapshot.meta?.performanceCutoff),
     retrievedAt: snapshot.meta?.retrievedAt, publishedAt: new Date().toISOString(), warnings, source: 'github-pages', live: false,
   } };
 }
@@ -40,7 +43,7 @@ export async function buildPages({ snapshot, gate, output = path.join(root, 'dis
   const safeGate = { username: gate.username, salt: gate.salt, iterations: gate.iterations, verifier: gate.verifier };
   await fs.mkdir(output, { recursive: true });
   for (const directory of ['assets', 'vendor']) await fs.mkdir(path.join(output, directory), { recursive: true });
-  for (const file of ['index.html', 'login.html', 'styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'chart-weeks.js']) {
+  for (const file of ['index.html', 'login.html', 'styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'chart-weeks.js', 'performance.js']) {
     let content = await fs.readFile(path.join(root, 'public', file), 'utf8');
     if (file.endsWith('.html')) content = content.replace(/\b(href|src)="\//g, '$1="./');
     await fs.writeFile(path.join(output, file), content);

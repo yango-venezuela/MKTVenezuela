@@ -37,6 +37,7 @@ test('static export works under a project subpath and excludes backend credentia
     const html = await fs.readFile(path.join(output, 'index.html'), 'utf8');
     assert.match(html, /src="\.\/app.js"/);
     assert.match(html, /src="\.\/assets\/yango.png"/);
+    assert.match(html, /class="business-section"/);
     assert.doesNotMatch(html, /(?:src|href)="\//);
     const files = await fs.readdir(output);
     assert.ok(files.includes('data.json'));
@@ -45,6 +46,7 @@ test('static export works under a project subpath and excludes backend credentia
     assert.ok((await fs.stat(path.join(output, 'vendor/lucide.js'))).size < 30000);
     assert.ok((await fs.stat(path.join(output, 'assets/yango.png'))).size > 0);
     assert.ok(files.includes('chart-weeks.js'));
+    assert.ok(files.includes('performance.js'));
     const publishedGate = await fs.readFile(path.join(output, 'gate-config.json'), 'utf8');
     assert.ok(!publishedGate.includes(password));
     assert.ok(!publishedGate.includes('must-not-publish'));
