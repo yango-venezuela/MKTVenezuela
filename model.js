@@ -89,7 +89,11 @@ export function kpisFor(data, state) {
   const aggs = Object.fromEntries(Object.keys(fields).map(metric => [metric, aggregate(data, dates, metric)]));
   const targets = data.monthlyTargets?.[state.month] || {};
   const monthWeeks = weeksForMonth(state.month), current = weekStart(data.meta.cutoff || `${state.month}-01`);
-  const weeklyKey = state.period === 'week' ? state.week : monthWeeks.find(week => week.key === current)?.key || monthWeeks.filter(week => week.key <= data.meta.cutoff).at(-1)?.key || monthWeeks[0].key;
+  const latestClosed = monthWeeks.filter(week => {
+    const values = weeklyMetrics(data, week.key);
+    return values.closed && numeric(values.active.actual) && numeric(values.frequency.actual);
+  }).at(-1);
+  const weeklyKey = state.period === 'week' ? state.week : latestClosed?.key || monthWeeks.find(week => week.key === current)?.key || monthWeeks.filter(week => week.key <= data.meta.cutoff).at(-1)?.key || monthWeeks[0].key;
   const weekly = weeklyMetrics(data, weeklyKey);
   const primaryAndLevers = Object.keys(fields).map(id => {
     const agg = aggs[id];
