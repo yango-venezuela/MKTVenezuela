@@ -23,4 +23,4 @@ form.addEventListener('submit', async event => {
   finally { submit.disabled = false; }
 });
 window.lucide?.createIcons();
-import { signIn, entryUrl } from './runtime.js';
+import { signIn, entryUrl } from './runtime.js?access=2';

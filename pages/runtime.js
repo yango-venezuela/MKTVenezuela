@@ -1,4 +1,4 @@
-import { sessionKey, gateUser, validSession, verifyGatePassword } from './gate.js';
+import { sessionKey, gateUser, validSession, verifyGatePassword } from './gate.js?access=2';
 
 export const entryUrl = './index.html';
 let configuration;
