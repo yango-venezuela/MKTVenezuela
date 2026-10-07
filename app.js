@@ -1,5 +1,5 @@
-import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeklyMetrics, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate } from './model.js';
-import { loadDashboard, signOut } from './runtime.js';
+import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeklyMetrics, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate } from './model.js?access=2';
+import { loadDashboard, signOut } from './runtime.js?access=2';
 import { weeklySeparators } from './chart-weeks.js';
 import { performanceFor, performanceSeries } from './performance.js';
 import { periodInsight, weeklyInsights } from './insights.js';
