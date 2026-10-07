@@ -51,7 +51,7 @@ export function createApp(config = process.env, provider = new DataProvider(conf
   app.get('/vendor/chart.js', (req, res) => res.sendFile(path.join(root, 'node_modules/chart.js/dist/chart.umd.js')));
   app.get('/vendor/lucide.js', (req, res) => res.sendFile(path.join(root, 'node_modules/lucide/dist/umd/lucide.js')));
   app.use('/assets', express.static(path.join(root, 'public/assets'), { dotfiles: 'deny', maxAge: 0 }));
-  for (const file of ['styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'runtime.js', 'chart-weeks.js', 'performance.js']) app.get(`/${file}`, (req, res) => res.sendFile(path.join(root, 'public', file)));
+  for (const file of ['styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'runtime.js', 'chart-weeks.js', 'performance.js', 'insights.js']) app.get(`/${file}`, (req, res) => res.sendFile(path.join(root, 'public', file)));
   app.use((req, res) => res.status(404).json({ error: 'No encontrado.' }));
   app.use((error, req, res, next) => res.status(error.status === 413 ? 413 : 400).json({ error: 'Solicitud invalida.' }));
   return app;

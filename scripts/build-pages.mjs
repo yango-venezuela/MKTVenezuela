@@ -46,7 +46,7 @@ export async function buildPages({ snapshot, gate, output = path.join(root, 'dis
   const safeGate = Array.isArray(gate.users) ? { users: safeUsers } : safeUsers[0];
   await fs.mkdir(output, { recursive: true });
   for (const directory of ['assets', 'vendor']) await fs.mkdir(path.join(output, directory), { recursive: true });
-  for (const file of ['index.html', 'login.html', 'styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'chart-weeks.js', 'performance.js']) {
+  for (const file of ['index.html', 'login.html', 'styles.css', 'login.css', 'app.js', 'login.js', 'model.js', 'chart-weeks.js', 'performance.js', 'insights.js']) {
     let content = await fs.readFile(path.join(root, 'public', file), 'utf8');
     if (file.endsWith('.html')) content = content.replace(/\b(href|src)="\//g, '$1="./');
     await fs.writeFile(path.join(output, file), content);

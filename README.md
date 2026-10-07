@@ -4,6 +4,13 @@ Dashboard de lectura para Caracas, basado en la referencia de OSY del 7 de
 octubre de 2026. Conserva los siete KPIs, filtros mensual/semanal, grafica
 diaria/acumulada, panel de cierre y fichas de investigacion.
 
+El titulo se centra en el encabezado. El comentario lateral sigue la vista:
+`Month overview` compara el mes a fecha, mientras `Week focus` compara la semana
+seleccionada. En Month, los comentarios semanales aparecen debajo del focus map
+solo para semanas con reales, indicando las fechas efectivamente observadas.
+La tarjeta lateral evalua primero Trips y GMV y separa las alertas de adquisicion;
+un mes en positivo no se pinta en rojo por el resultado de una semana.
+
 ## GitHub Pages: version elegida
 
 La version estatica se publica desde la rama `gh-pages`, con un enlace estable.

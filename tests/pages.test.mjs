@@ -72,6 +72,7 @@ test('static export works under a project subpath and excludes backend credentia
     assert.ok((await fs.stat(path.join(output, 'assets/yango.png'))).size > 0);
     assert.ok(files.includes('chart-weeks.js'));
     assert.ok(files.includes('performance.js'));
+    assert.ok(files.includes('insights.js'));
     const publishedGate = await fs.readFile(path.join(output, 'gate-config.json'), 'utf8');
     assert.ok(!publishedGate.includes(password));
     assert.ok(!publishedGate.includes('must-not-publish'));

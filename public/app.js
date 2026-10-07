@@ -2,6 +2,7 @@ import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeri
 import { loadDashboard, signOut } from './runtime.js';
 import { weeklySeparators } from './chart-weeks.js';
 import { performanceFor, performanceSeries } from './performance.js';
+import { periodInsight, weeklyInsights } from './insights.js';
 
 let data;
 let state = { period: 'month', month: '', week: '', selected: 'trips', metric: 'trips', chartMode: 'daily', performanceMetric: 'spend' };
@@ -203,26 +204,36 @@ function investigate(id, week, values, key) {
   dialog.showModal();
 }
 
-function renderWeekFocus() {
-  const key = state.period === 'week' ? state.week : weekStart(data.meta.cutoff || `${state.month}-01`);
-  const view = kpisFor(data, { ...state, period: 'week', week: key });
-  const metrics = Object.fromEntries(view.kpis.map(kpi => [kpi.id, kpi]));
-  const trips = metrics.trips, gmv = metrics.gmv, ticket = metrics.ticket;
-  let text = 'Not enough comparable data to define a focus for this window.';
-  if (numeric(trips.actual) && numeric(trips.expected) && numeric(gmv.actual) && numeric(gmv.expected)) {
-    if (gmv.actual < gmv.expected && numeric(ticket.expected) && numeric(ticket.actual)) {
-      const volumeEffect = (trips.actual - trips.expected) * ticket.expected;
-      const fareEffect = trips.actual * (ticket.actual - ticket.expected);
-      text = fareEffect < volumeEffect ? `GMV is ${percent(change(gmv.actual, gmv.expected))} vs. plan. The average-fare difference contributes more than volume to this gap. Review fare and trip mix.` : `GMV is ${percent(change(gmv.actual, gmv.expected))} vs. plan. Trip volume contributes more to this gap. Review users and frequency when comparable counts are available.`;
-    } else if (trips.actual < trips.expected) text = 'GMV is holding up while trips are below plan. Review whether average fare is compensating for weaker volume.';
-    else if (numeric(metrics.installs.actual) && numeric(metrics.installs.expected) && metrics.installs.actual < metrics.installs.expected) text = 'Trips and GMV are on plan, but installs are below. Watch acquisition continuity without assuming installs and first trips belong to the same cohort.';
-    else text = 'Both primary results are on plan in this window. Watch the weekly levers for sustained deviations.';
-  }
-  get('weekFocus').textContent = text;
+function renderComments() {
+  const insight = periodInsight(data, state);
+  get('overviewComment').dataset.status = insight.status;
+  get('overviewTitle').textContent = insight.title;
+  get('overviewRange').textContent = `${insight.windowLabel} · ${insight.rangeLabel}`;
+  get('overviewHeadline').textContent = insight.headline;
+  get('overviewDetail').textContent = insight.detail;
+  get('overviewAction').textContent = insight.action;
+  get('overviewDetail').hidden = !insight.detail;
+  get('overviewAction').hidden = !insight.action;
+  get('weeklyCommentsSection').hidden = state.period === 'week';
+  get('weeklyCommentsMonth').textContent = monthLabel(state.month);
+  const comments = weeklyInsights(data, state.month);
+  get('weeklyComments').replaceChildren(...comments.map(comment => {
+    const row = document.createElement('article');
+    row.className = 'weekly-comment';
+    row.dataset.status = comment.status;
+    row.innerHTML = '<div><strong></strong><span class="source-period"></span></div><div><p class="weekly-headline"></p><p class="weekly-detail"></p><p class="weekly-action"></p></div>';
+    row.querySelector('strong').textContent = comment.windowLabel;
+    row.querySelector('.source-period').textContent = `${comment.rangeLabel} actuals`;
+    row.querySelector('.weekly-headline').textContent = comment.headline;
+    row.querySelector('.weekly-detail').textContent = comment.detail;
+    row.querySelector('.weekly-action').textContent = comment.action;
+    return row;
+  }));
+  if (!comments.length) { const note = document.createElement('p'); note.className = 'empty-state'; note.textContent = 'Weekly actuals pending.'; get('weeklyComments').append(note); }
 }
 
 function remember() { try { localStorage.setItem('measurement-view', JSON.stringify(state)); } catch {} }
-function renderAll() { renderWindows(); renderMeta(); renderKpis(); renderDetail(); renderChart(); renderFocusMap(); renderWeekFocus(); renderPerformance(); window.lucide?.createIcons(); }
+function renderAll() { renderWindows(); renderMeta(); renderKpis(); renderDetail(); renderChart(); renderFocusMap(); renderComments(); renderPerformance(); window.lucide?.createIcons(); }
 async function load(refresh = false) {
   get('refreshData').disabled = true;
   get('connectionError').hidden = true;

@@ -14,7 +14,8 @@
   button,input,select{font:inherit;}
   .app{min-height:100vh;display:grid;grid-template-rows:auto 1fr;}
   header{background:var(--black);color:#fff;padding:20px 28px 16px;border-bottom:4px solid var(--yango-red);}
-  .topbar{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;max-width:1480px;margin:0 auto;flex-wrap:wrap;}
+  .topbar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center;max-width:1480px;margin:0 auto;}
+  .dashboard-title{text-align:center;max-width:420px;min-width:0}.topbar .filters{justify-content:flex-end;min-width:0}
   .brand{display:flex;align-items:center;gap:10px;}
   .brand .chip{background:var(--yango-red);border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;}
   h1{margin:0;font-size:clamp(20px,2.4vw,28px);line-height:1.1;font-weight:800;}
@@ -110,7 +111,7 @@
     .lever-layout{grid-template-columns:1fr;} .lever-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
   }
   @media (max-width:760px){
-    header{padding:16px;} .topbar{align-items:stretch;flex-direction:column;}
+    header{padding:16px;} .topbar{grid-template-columns:minmax(0,1fr);gap:12px;justify-items:center}.topbar .brand{justify-self:start}.topbar .filters{justify-content:center;width:100%}
     .main{padding:16px;} .hero-grid{grid-template-columns:1fr;}
     .lever-layout{grid-template-columns:1fr;} .lever-grid{grid-template-columns:1fr;} .weekly-grid{grid-template-columns:1fr 1fr;} .logic{grid-template-columns:1fr;}
   }
@@ -137,7 +138,14 @@ h1{font-size:26px}.primary .value{font-size:44px}.fh-value{font-size:36px}
 .icon-btn svg{width:16px;height:16px}.icon-btn:disabled{opacity:.5;cursor:wait}.connection-error{margin:16px 28px;color:var(--red);font-size:13px}
 .drawer{border:0;padding:24px}.drawer::backdrop{background:rgba(14,14,16,.45)}.drawer .close-btn svg{width:16px;height:16px}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
-.focus-card{border-left:4px solid var(--yango-red);background:#fff3f3}.focus-card p{margin:6px 0 0;line-height:1.5}
+.focus-card{border-left:4px solid var(--gray);background:var(--gray-soft)}.focus-card p{margin:8px 0 0;line-height:1.5;font-size:13px}.focus-card [hidden]{display:none}
+.focus-card[data-status="ok"]{border-left-color:var(--green);background:var(--green-soft)}.focus-card[data-status="bad"]{border-left-color:var(--red);background:var(--red-soft)}.focus-card[data-status="warn"]{border-left-color:var(--amber);background:var(--amber-soft)}
+#overviewHeadline{font-weight:700}#overviewRange{font-size:11px;color:var(--muted)}
+.weekly-commentary{min-width:0}.weekly-commentary[hidden]{display:none}.weekly-commentary .section-title{flex-wrap:wrap}.weekly-commentary .section-title .source-period{margin:0}
+.weekly-comment{display:grid;grid-template-columns:130px minmax(0,1fr);gap:14px;border-left:3px solid var(--gray);border-bottom:1px solid var(--line);padding:12px 0 12px 12px;min-width:0}
+.weekly-comment[data-status="ok"]{border-left-color:var(--green)}.weekly-comment[data-status="bad"]{border-left-color:var(--red)}.weekly-comment[data-status="warn"]{border-left-color:var(--amber)}
+.weekly-comment strong{font-size:12px}.weekly-comment .source-period{display:block;font-size:11px;line-height:1.5}.weekly-comment p{font-size:12px;line-height:1.5;margin:0 0 4px;overflow-wrap:anywhere}.weekly-headline{font-weight:700}.weekly-action{color:var(--muted)}
+@media(max-width:520px){.weekly-comment{grid-template-columns:minmax(0,1fr);gap:8px}}
 .empty-state{font-size:13px;color:var(--muted)}.source-period{font-size:12px;color:var(--muted);margin:8px 0 0}
 @media(max-width:860px){.lever-layout{grid-template-columns:1fr;gap:20px}}
 @media(max-width:760px){h1{font-size:22px}.brand-logo{width:52px;height:18px}.data-meta{padding:10px 16px 0}.primary .value{font-size:38px}.fh-value{font-size:32px}.lever-grid{grid-template-columns:1fr}.weekly-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{align-items:end}.main{gap:16px}.seg{flex-wrap:wrap;border-radius:8px}.seg button{min-height:36px;padding:6px 10px}.chart-controls{align-items:flex-start}.drawer{max-width:calc(100% - 24px)}.connection-error{margin:16px}}

@@ -13,11 +13,11 @@
     <div class="topbar">
       <div class="brand">
         <img class="brand-logo" src="/assets/yango.png" alt="Yango">
-        <div>
+      </div>
+        <div class="dashboard-title">
           <h1>Daily Tracker · Venezuela</h1>
           <p class="subtitle">Caracas · actual vs. plan to date</p>
         </div>
-      </div>
       <div class="filters">
         <div class="control"><span>View</span>
           <div class="toggle" id="periodToggle">
@@ -52,9 +52,12 @@
 
     <aside class="detail-sidebar" aria-label="Selected KPI detail">
       <section class="panel" id="detail" aria-live="polite"></section>
-      <section class="panel focus-card" style="border-left:4px solid var(--yango-red);background:#fff3f3;">
-        <strong>This week's focus</strong>
-        <p id="weekFocus" style="margin:6px 0 0;"></p>
+      <section class="panel focus-card" id="overviewComment" aria-live="polite">
+        <strong id="overviewTitle">Month overview</strong>
+        <p id="overviewRange" class="source-period"></p>
+        <p id="overviewHeadline"></p>
+        <p id="overviewDetail"></p>
+        <p id="overviewAction"></p>
       </section>
     </aside>
 
@@ -85,7 +88,10 @@
         <p class="footnote">Green: on plan. Yellow: up to 5% below plan. Red: more than 5% below plan. Gray: actual or plan is unavailable. </p>
       </section>
 
-      
+      <section class="weekly-commentary" id="weeklyCommentsSection" aria-labelledby="weeklyCommentsTitle">
+        <div class="section-title"><h2 id="weeklyCommentsTitle">Weekly comments</h2><span class="source-period" id="weeklyCommentsMonth"></span></div>
+        <div id="weeklyComments"></div>
+      </section>
     </section>
 
     </div>
