@@ -11,3 +11,5 @@ access*.txt
 .DS_Store
 .vercel/
 coverage/
+dist-pages/
+pages-gate.json

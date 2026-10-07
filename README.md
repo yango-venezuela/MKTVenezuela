@@ -4,7 +4,46 @@ Dashboard de lectura para Caracas, basado en la referencia de OSY del 7 de
 octubre de 2026. Conserva los siete KPIs, filtros mensual/semanal, grafica
 diaria/acumulada, panel de cierre y fichas de investigacion.
 
-## Desarrollo
+## GitHub Pages: version elegida
+
+La version estatica se publica desde la rama `gh-pages`, con un enlace estable.
+Su login es exclusivamente visual: **los agregados y targets publicados son
+publicos y se pueden descargar sin iniciar sesion**. La publicacion de estos
+datos fue autorizada por la responsable del dashboard el 7 de octubre de 2026.
+No publicar datos personales ni credenciales de Google.
+
+```sh
+npm ci
+npm run setup:pages
+ALLOW_PUBLIC_DATA=yes npm run build:pages
+npm run preview:pages
+```
+
+`setup:pages` genera una clave aleatoria exclusiva de Pages, distinta de la del
+servidor, en `../measurement-pages-access.txt`. Su verificador se conserva en
+`../measurement-pages-gate.json`, tambien fuera del repositorio. No publica la
+clave en texto: el navegador recibe el verificador, que permite probar claves
+offline y NO constituye control de acceso a los datos estaticos.
+Para exportaciones posteriores se reutiliza ese mismo verificador:
+
+```sh
+ALLOW_PUBLIC_DATA=yes npm run build:pages
+```
+
+La exportacion usa `data/snapshot.json` o `SNAPSHOT_FILE`, genera `dist-pages/`
+y nunca copia `.env`, cuentas de servicio ni el servidor. Publique exclusivamente
+el contenido de esa carpeta en `gh-pages`. En Settings > Pages seleccione esa
+rama y la carpeta raiz. Las bibliotecas y sus licencias se incluyen en el sitio.
+
+Actualizar la pagina solo vuelve a leer la ultima publicacion: no consulta el
+Sheet directamente. Para actualizar los reales hay que renovar el snapshot y
+republicar en la misma rama; el enlace no cambia. La lectura automatica del Sheet
+todavia requiere configurar su conexion por separado.
+
+La version con servidor se conserva como alternativa, pero no es necesaria para
+abrir el dashboard publicado en Pages.
+
+## Alternativa Con Servidor
 
 Requiere Node.js 22.13 o superior.
 
@@ -22,7 +61,8 @@ credenciales existentes. El acceso local es `http://localhost:4173`.
 
 La interfaz solicita los datos a `/api/dashboard` despues de autenticar la
 sesion. La clave, la conexion de Google y las lecturas guardadas permanecen
-en el servidor. El repositorio no contiene reales ni metas del negocio.
+en el servidor. Esta alternativa no publica reales ni metas; la version de
+Pages, descrita arriba, si publica los agregados autorizados en `gh-pages`.
 
 Variables de entorno de produccion:
 
@@ -54,7 +94,7 @@ Sin conexion de Google, el servidor puede mostrar una lectura privada en
 su fecha de corte. No se incluye en GitHub. La conexion en este chat no se
 transfiere al servidor: las variables de produccion deben configurarse aparte.
 
-## Despliegue desde GitHub
+## Despliegue Del Servidor
 
 El dashboard requiere usuario/clave, independientemente de la visibilidad del
 repositorio. Railway puede
@@ -62,8 +102,9 @@ leer el repositorio, ejecutar `npm run build` y luego `npm start`. Su archivo de
 configuracion incluye comprobacion de salud en `/healthz`. Configure las
 variables antes de publicar y conserve el mismo servicio y dominio al actualizar.
 
-GitHub Pages no ejecuta el servidor de autenticacion ni la lectura privada del
-Sheet. No publique un snapshot de negocio como archivo estatico.
+GitHub Pages no ejecuta este servidor de autenticacion ni la lectura privada del
+Sheet. Su version estatica separada utiliza los agregados aprobados y un login
+visual, como se explica al inicio de este documento.
 
 Las tipografias corporativas no se redistribuyen en este repositorio publico.
 La interfaz utiliza Arial como alternativa hasta contar con permiso de licencia.

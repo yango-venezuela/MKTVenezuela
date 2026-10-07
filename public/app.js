@@ -1,4 +1,5 @@
 import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate, activeProfile } from './model.js';
+import { loadDashboard, signOut } from './runtime.js';
 
 let data;
 let state = { period: 'month', month: '', week: '', selected: 'trips', metric: 'trips', chartMode: 'daily' };
@@ -13,7 +14,7 @@ const delta = (actual, expected) => numeric(actual) && numeric(expected) && expe
 function renderMeta() {
   const notes = [];
   notes.push(`Data through ${data.meta.cutoff ? formatDate(data.meta.cutoff) : 'No data'}`);
-  if (!data.meta.live) notes.push('Saved data read');
+  if (!data.meta.live) notes.push(data.meta.source === 'github-pages' ? 'Published data read' : 'Saved data read');
   if (data.meta.stale) notes.push('Live connection unavailable');
   const time = new Date(data.meta.retrievedAt);
   if (!Number.isNaN(time.getTime())) notes.push(`Updated ${new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Caracas' }).format(time)}`);
@@ -191,11 +192,7 @@ async function load(refresh = false) {
   get('refreshData').disabled = true;
   get('connectionError').hidden = true;
   try {
-    const response = await fetch(`/api/dashboard${refresh ? '?refresh=1' : ''}`);
-    if (response.status === 401) return window.location.replace('/login');
-    const value = await response.json();
-    if (!response.ok) throw new Error(value.error || 'Data unavailable.');
-    data = value;
+    data = await loadDashboard(refresh);
     const months = [...new Set(data.days.map(day => day.date.slice(0, 7)))].sort();
     if (!months.includes(state.month)) state.month = data.meta.month || months.at(-1);
     const weeks = weeksForMonth(state.month);
@@ -212,7 +209,7 @@ get('windowSelect').addEventListener('change', event => { if (state.period === '
 get('metricSeg').addEventListener('click', event => { const button = event.target.closest('button[data-m]'); if (!button || !data) return; state.metric = button.dataset.m; renderChart(); remember(); });
 get('modeSeg').addEventListener('click', event => { const button = event.target.closest('button[data-mode]'); if (!button || !data) return; state.chartMode = button.dataset.mode === 'daily' ? 'daily' : 'cum'; renderChart(); remember(); });
 get('refreshData').addEventListener('click', () => load(true));
-get('logout').addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); window.location.replace('/login'); });
+get('logout').addEventListener('click', () => signOut());
 try { const saved = JSON.parse(localStorage.getItem('measurement-view')); if (saved && ['month', 'week'].includes(saved.period)) state = { ...state, ...saved }; } catch {}
 window.lucide?.createIcons();
 load();
