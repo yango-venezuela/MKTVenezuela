@@ -130,6 +130,8 @@ h1{font-size:26px}.primary .value{font-size:44px}.fh-value{font-size:36px}
 .lever-layout .kpi-head{flex-direction:column;flex-wrap:nowrap;justify-content:flex-start;gap:6px}.lever-layout .kpi-title{font-size:13px;line-height:16px;min-height:32px}
 .lever-layout .status{font-size:10px;padding:4px 7px}.lever-layout .dot{width:6px;height:6px}.lever-layout .value{font-size:26px}
 .lever-layout .expected{font-size:11px;line-height:14px}.lever-layout .delta{font-size:12px}.status{max-width:100%}.big-chart-wrap{position:relative;width:100%;min-width:0}
+.weekly-actual-label{font-size:10px;line-height:14px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.lever-layout .kpi{min-height:204px;grid-template-rows:58px minmax(62px,1fr) 28px}
 .lever-layout .kpi:hover,.lever-layout .kpi.active{transform:none}
 #focusMapWrap{max-width:100%;overflow:auto}.focus-map{min-width:800px}.focus-map .cell{width:100%;text-align:left;font:inherit}
 .focus-map .cell .c-lbl{white-space:normal}.data-meta{max-width:1480px;margin:0 auto;padding:10px 28px 0;color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:8px 20px}

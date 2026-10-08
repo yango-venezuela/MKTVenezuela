@@ -87,6 +87,16 @@ test('top equity cards keep the last closed week in both Month and Week while bu
   assert.equal(mapActive.actual, null);
   assert.equal(focusCell(data, { key: '2026-10-05', end: '2026-10-11' }, 'frequency').expected, 2.4);
 });
+test('revised closed-week actuals stay independent of the unchanged plan', () => {
+  const data = sample();
+  data.weeklyPlans['2026-09-28'] = { active: 100, frequency: 2.4 };
+  data.weeklyActuals.push({ weekStart: '2026-09-28', weekEnd: '2026-10-04', activeUnique: 90, trips: 225, status: 'closed' });
+  const view = kpisFor(data, { period: 'month', month: '2026-10' });
+  assert.equal(view.kpis.find(kpi => kpi.id === 'active').actual, 90);
+  assert.equal(view.kpis.find(kpi => kpi.id === 'active').expected, 100);
+  assert.equal(view.kpis.find(kpi => kpi.id === 'frequency').actual, 2.5);
+  assert.equal(view.kpis.find(kpi => kpi.id === 'frequency').expected, 2.4);
+});
 test('a month without a matching closed week does not inherit a different months real values', () => {
   const data = sample();
   data.weeklyActuals.push({ weekStart: '2026-09-21', weekEnd: '2026-09-27', activeUnique: 110, trips: 250, status: 'closed' });
