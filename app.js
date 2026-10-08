@@ -1,4 +1,4 @@
-import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeklyMetrics, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate } from './model.js?access=4';
+import { names, fields, numeric, status, change, focusStatus, kpisFor, chartSeries, focusCell, weeklyMetrics, weeksForMonth, weekStart, formatDate, monthLabel, shiftDate } from './model.js?access=5';
 import { loadDashboard, signOut } from './runtime.js?access=2';
 import { weeklySeparators } from './chart-weeks.js';
 import { performanceFor, performanceSeries } from './performance.js';
@@ -10,10 +10,10 @@ let chart;
 let activeChart;
 let performanceChart;
 const get = id => document.getElementById(id);
-const fmt = (value, unit = 'number') => !numeric(value) ? 'No data' : unit === 'pct' ? `${(value * 100).toFixed(1)}%` : unit === 'cost' ? '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : unit === 'usd' ? '$' + value.toLocaleString('en-US', { maximumFractionDigits: value < 10 ? 2 : 0 }) : unit === 'ratio' ? value.toLocaleString('en-US', { maximumFractionDigits: 2 }) : value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+const fmt = (value, unit = 'number', precision = 2) => !numeric(value) ? 'No data' : unit === 'pct' ? `${(value * 100).toFixed(1)}%` : unit === 'cost' ? '$' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : unit === 'usd' ? '$' + value.toLocaleString('en-US', { maximumFractionDigits: value < 10 ? 2 : 0 }) : unit === 'ratio' ? value.toLocaleString('en-US', { maximumFractionDigits: precision }) : value.toLocaleString('en-US', { maximumFractionDigits: 0 });
 const unit = id => ['gmv', 'ticket'].includes(id) ? 'usd' : id === 'frequency' ? 'ratio' : 'number';
-const percent = value => numeric(value) ? `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%` : 'No comparison';
-const delta = (actual, expected) => numeric(actual) && numeric(expected) && expected === 0 ? 'Zero plan' : `${percent(change(actual, expected))}${numeric(change(actual, expected)) ? ' vs. plan' : ''}`;
+const percent = (value, precision = 1) => numeric(value) ? `${value >= 0 ? '+' : ''}${(value * 100).toFixed(precision)}%` : 'No comparison';
+const delta = (actual, expected, precision = 1) => numeric(actual) && numeric(expected) && expected === 0 ? 'Zero plan' : `${percent(change(actual, expected), precision)}${numeric(change(actual, expected)) ? ' vs. plan' : ''}`;
 const kpiStatus = kpi => kpi.group === 'weekly' && !kpi.closed ? { key: 'unknown', label: kpi.upcoming ? 'Upcoming week' : 'Week in progress' } : status(kpi.actual, kpi.expected);
 
 function renderMeta() {
@@ -59,12 +59,13 @@ function renderKpis() {
   get('weeklyCaption').textContent = `${result.equity.closed ? 'Last closed week' : 'Weekly'} · ${result.equity.label}`;
   for (const kpi of result.kpis) {
     const st = kpiStatus(kpi);
+    const weekly = kpi.group === 'weekly';
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `kpi ${kpi.group === 'primary' ? 'primary' : ''} ${state.selected === kpi.id ? 'active' : ''}`;
     button.setAttribute('aria-pressed', String(state.selected === kpi.id));
     button.dataset.kpi = kpi.id;
-    button.innerHTML = `<div class="kpi-head"><div class="kpi-title">${kpi.title}</div><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div><div class="value">${fmt(kpi.actual, kpi.unit)}</div><div class="delta ${st.key}">${kpi.group === 'weekly' && !kpi.closed ? 'Pending close' : delta(kpi.actual, kpi.expected)}</div></div><div class="expected">${kpi.group === 'weekly' ? 'Weekly plan' : 'Plan to date'}: ${fmt(kpi.expected, kpi.unit)}</div>`;
+    button.innerHTML = `<div class="kpi-head"><div class="kpi-title">${kpi.title}</div><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div>${weekly ? '<div class="weekly-actual-label">Weekly actual</div>' : ''}<div class="value">${fmt(kpi.actual, kpi.unit, weekly ? 3 : 2)}</div><div class="delta ${st.key}">${weekly && !kpi.closed ? 'Pending close' : delta(kpi.actual, kpi.expected, weekly ? 2 : 1)}</div></div><div class="expected">${weekly ? 'Weekly plan' : 'Plan to date'}: ${fmt(kpi.expected, kpi.unit, weekly ? 3 : 2)}</div>`;
     button.addEventListener('click', () => { state.selected = kpi.id; renderKpis(); renderDetail(); remember(); });
     get(kpi.group === 'primary' ? 'primaryKpis' : kpi.group === 'weekly' ? 'weeklyKpis' : 'leverKpis').append(button);
   }
@@ -79,8 +80,8 @@ function renderDetail() {
   const forecast = numeric(kpi.forecast);
   const headline = forecast ? kpi.forecast : kpi.actual;
   const weekly = kpi.group === 'weekly';
-  const comparison = weekly && !kpi.closed ? 'Pending weekly close' : forecast ? delta(kpi.forecast, kpi.forecastTarget).replace('vs. plan', 'vs. month plan') : delta(kpi.actual, kpi.expected);
-  get('detail').innerHTML = `<div class="detail-title"><h2>${kpi.title}</h2><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div class="forecast-hero"><div class="fh-label">${forecast ? 'Projected month close' : weekly ? 'Weekly actual' : 'Actual to date'}</div><div class="fh-value">${fmt(headline, kpi.unit)}</div><div class="fh-sub ${forecast ? status(kpi.forecast, kpi.forecastTarget).key : st.key}">${comparison}${forecast ? ` · ${fmt(kpi.forecastTarget, kpi.unit)}` : ''}</div></div><div class="stat-row"><div class="stat"><span class="stat-label">${weekly ? 'Weekly actual' : 'Actual to date'}</span><span class="stat-val">${fmt(kpi.actual, kpi.unit)}</span></div><div class="stat"><span class="stat-label">${weekly ? 'Weekly plan' : 'Plan to date'}</span><span class="stat-val">${fmt(kpi.expected, kpi.unit)}</span></div></div>${kpi.rangeLabel ? `<p class="source-period">${kpi.rangeLabel} · ${kpi.id === 'active' ? 'unique users for the full week' : 'trips per unique user for the full week'}</p>` : ''}${forecast ? '<p class="source-period">Close projected at the current actual-to-plan pace.</p>' : ''}`;
+  const comparison = weekly && !kpi.closed ? 'Pending weekly close' : forecast ? delta(kpi.forecast, kpi.forecastTarget).replace('vs. plan', 'vs. month plan') : delta(kpi.actual, kpi.expected, weekly ? 2 : 1);
+  get('detail').innerHTML = `<div class="detail-title"><h2>${kpi.title}</h2><span class="status ${st.key}"><i class="dot"></i>${st.label}</span></div><div class="forecast-hero"><div class="fh-label">${forecast ? 'Projected month close' : weekly ? 'Weekly actual' : 'Actual to date'}</div><div class="fh-value">${fmt(headline, kpi.unit, weekly ? 3 : 2)}</div><div class="fh-sub ${forecast ? status(kpi.forecast, kpi.forecastTarget).key : st.key}">${comparison}${forecast ? ` · ${fmt(kpi.forecastTarget, kpi.unit)}` : ''}</div></div><div class="stat-row"><div class="stat"><span class="stat-label">${weekly ? 'Weekly actual' : 'Actual to date'}</span><span class="stat-val">${fmt(kpi.actual, kpi.unit, weekly ? 3 : 2)}</span></div><div class="stat"><span class="stat-label">${weekly ? 'Weekly plan' : 'Plan to date'}</span><span class="stat-val">${fmt(kpi.expected, kpi.unit, weekly ? 3 : 2)}</span></div></div>${kpi.rangeLabel ? `<p class="source-period">${kpi.rangeLabel} · ${kpi.id === 'active' ? 'unique users for the full week' : 'trips per unique user for the full week'}</p>` : ''}${forecast ? '<p class="source-period">Close projected at the current actual-to-plan pace.</p>' : ''}`;
   if (weekly) {
     const weeks = weeksForMonth(state.month);
     const values = weeks.map(week => weeklyMetrics(data, week.key)[kpi.id]);
